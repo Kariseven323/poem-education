@@ -76,3 +76,7 @@ coverage/
 
 # 文档生成文件
 docs/generated/
+
+guwen/
+sentence/
+writer/

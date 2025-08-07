@@ -169,3 +169,7 @@ scripts/generated/
 
 # 本地配置
 local.properties
+
+guwen/
+sentence/
+writer/
