@@ -90,7 +90,7 @@ mybatis-plus:
 
 # JWT配置
 jwt:
-  secret: poem-education-jwt-secret-key-2025
+  secret: poem-education-jwt-secure-secret-key-for-hs512-algorithm-minimum-512-bits-required-by-rfc7518-specification-2025-secure-token-generation
   expiration: 86400 # 24小时，单位：秒
   header: Authorization
   prefix: Bearer

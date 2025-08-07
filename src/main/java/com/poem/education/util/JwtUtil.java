@@ -33,16 +33,17 @@ public class JwtUtil {
     
     /**
      * JWT密钥
+     * 必须至少64字节（512位）以满足HS512算法要求
      */
-    @Value("${app.jwt.secret:poem-education-secret-key-for-jwt-token-generation-2025}")
+    @Value("${jwt.secret:poem-education-jwt-secure-secret-key-for-hs512-algorithm-minimum-512-bits-required-by-rfc7518-specification-2025}")
     private String jwtSecret;
-    
+
     /**
-     * JWT过期时间（毫秒）
-     * 默认7天
+     * JWT过期时间（秒）
+     * 从配置文件读取，默认24小时
      */
-    @Value("${app.jwt.expiration:604800000}")
-    private Long jwtExpiration;
+    @Value("${jwt.expiration:86400}")
+    private Long jwtExpirationInSeconds;
     
     /**
      * 生成JWT令牌
@@ -53,7 +54,7 @@ public class JwtUtil {
      */
     public String generateToken(Long userId, String username) {
         Date now = new Date();
-        Date expiryDate = new Date(now.getTime() + jwtExpiration);
+        Date expiryDate = new Date(now.getTime() + jwtExpirationInSeconds * 1000);
         
         SecretKey key = Keys.hmacShaKeyFor(jwtSecret.getBytes());
         
@@ -148,11 +149,11 @@ public class JwtUtil {
     
     /**
      * 获取JWT过期时间（秒）
-     * 
+     *
      * @return 过期时间（秒）
      */
     public Long getExpirationInSeconds() {
-        return jwtExpiration / 1000;
+        return jwtExpirationInSeconds;
     }
     
     /**
