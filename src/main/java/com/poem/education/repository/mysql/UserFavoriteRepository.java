@@ -72,13 +72,22 @@ public interface UserFavoriteRepository extends JpaRepository<UserFavorite, Long
     
     /**
      * 查找用户特定收藏夹的收藏
-     * 
+     *
      * @param userId 用户ID
      * @param folderName 收藏夹名称
      * @param pageable 分页参数
      * @return 收藏分页列表
      */
     Page<UserFavorite> findByUserIdAndFolderName(Long userId, String folderName, Pageable pageable);
+
+    /**
+     * 查找用户特定收藏夹的收藏（不分页）
+     *
+     * @param userId 用户ID
+     * @param folderName 收藏夹名称
+     * @return 收藏列表
+     */
+    List<UserFavorite> findByUserIdAndFolderName(Long userId, String folderName);
     
     /**
      * 查找用户特定收藏夹和类型的收藏
@@ -94,12 +103,30 @@ public interface UserFavoriteRepository extends JpaRepository<UserFavorite, Long
     
     /**
      * 查找用户的收藏夹列表
-     * 
+     *
      * @param userId 用户ID
      * @return 收藏夹名称列表
      */
     @Query("SELECT DISTINCT uf.folderName FROM UserFavorite uf WHERE uf.userId = :userId ORDER BY uf.folderName")
     List<String> findFolderNamesByUserId(@Param("userId") Long userId);
+
+    /**
+     * 检查用户是否有指定收藏夹
+     *
+     * @param userId 用户ID
+     * @param folderName 收藏夹名称
+     * @return 是否存在
+     */
+    boolean existsByUserIdAndFolderName(Long userId, String folderName);
+
+    /**
+     * 根据ID和用户ID查找收藏
+     *
+     * @param id 收藏ID
+     * @param userId 用户ID
+     * @return 收藏记录
+     */
+    Optional<UserFavorite> findByIdAndUserId(Long id, Long userId);
     
     /**
      * 统计用户的收藏数量

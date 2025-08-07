@@ -2,30 +2,32 @@
 spring:
   profiles:
     active: test
-  
+  main:
+    allow-bean-definition-overriding: true
+
   # 测试数据库配置
   datasource:
     url: jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
     driver-class-name: org.h2.Driver
     username: sa
-    password: 
-    
+    password:
+
   # JPA测试配置
   jpa:
     hibernate:
       ddl-auto: create-drop
-    show-sql: true
+    show-sql: false
     properties:
       hibernate:
         dialect: org.hibernate.dialect.H2Dialect
-        
-  # MongoDB测试配置（使用嵌入式MongoDB）
+
+  # MongoDB测试配置
   data:
     mongodb:
       host: localhost
       port: 27017
       database: poem_education_test
-      
+
   # Redis测试配置
   redis:
     host: localhost
@@ -35,5 +37,5 @@ spring:
 # 日志配置
 logging:
   level:
-    com.poem.education: debug
-    org.springframework.test: debug
+    com.poem.education: info
+    org.springframework.test: info

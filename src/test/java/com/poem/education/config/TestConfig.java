@@ -1,0 +1,23 @@
+package com.poem.education.config;
+
+import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Primary;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
+
+/**
+ * 测试配置类
+ * 
+ * @author poem-education-team
+ * @since 2025-08-07
+ */
+@TestConfiguration
+public class TestConfig {
+    
+    @Bean("testPasswordEncoder")
+    @Primary
+    public PasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder();
+    }
+}

@@ -97,8 +97,16 @@ public interface UserActionRepository extends JpaRepository<UserAction, Long> {
             String targetId, String targetType, String actionType, Pageable pageable);
     
     /**
+     * 统计用户的所有行为数量
+     *
+     * @param userId 用户ID
+     * @return 行为数量
+     */
+    long countByUserId(Long userId);
+
+    /**
      * 统计用户的特定行为数量
-     * 
+     *
      * @param userId 用户ID
      * @param actionType 行为类型
      * @return 行为数量
