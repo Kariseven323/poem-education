@@ -28,8 +28,8 @@ spring:
   # MySQL数据源配置
   datasource:
     url: jdbc:mysql://localhost:3306/poem_education?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
-    username: poem_user
-    password: your_password
+    username: root
+    password: cdj123
     driver-class-name: com.mysql.cj.jdbc.Driver
     hikari:
       minimum-idle: 5

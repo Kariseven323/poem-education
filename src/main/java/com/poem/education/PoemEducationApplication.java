@@ -11,10 +11,7 @@ package com.poem.education;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
-import org.springframework.data.mongodb.repository.config.EnableMongoRepositories;
 import org.springframework.cache.annotation.EnableCaching;
-import org.springframework.transaction.annotation.EnableTransactionManagement;
 
 /**
  * 诗词交流鉴赏平台主启动类
@@ -23,10 +20,7 @@ import org.springframework.transaction.annotation.EnableTransactionManagement;
  * @since 2025-08-07
  */
 @SpringBootApplication
-@EnableJpaRepositories(basePackages = "com.poem.education.repository.mysql")
-@EnableMongoRepositories(basePackages = "com.poem.education.repository.mongodb")
 @EnableCaching
-@EnableTransactionManagement
 public class PoemEducationApplication {
 
     public static void main(String[] args) {

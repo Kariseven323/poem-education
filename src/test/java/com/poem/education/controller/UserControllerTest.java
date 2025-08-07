@@ -169,7 +169,7 @@ class UserControllerTest {
     @Test
     void testCheckUsername_NotAvailable() throws Exception {
         // Given
-        when(userService.isUsernameAvailable("existinguser")).thenReturn(false);
+        when(userService.existsByUsername("existinguser")).thenReturn(true);
         
         // When & Then
         mockMvc.perform(get("/api/v1/auth/check-username")
@@ -178,13 +178,13 @@ class UserControllerTest {
                 .andExpect(jsonPath("$.code").value(200))
                 .andExpect(jsonPath("$.data").value(false));
         
-        verify(userService).isUsernameAvailable("existinguser");
+        verify(userService).existsByUsername("existinguser");
     }
     
     @Test
     void testCheckEmail_Available() throws Exception {
         // Given
-        when(userService.isEmailAvailable("new@example.com")).thenReturn(true);
+        when(userService.existsByEmail("new@example.com")).thenReturn(false);
         
         // When & Then
         mockMvc.perform(get("/api/v1/auth/check-email")
@@ -193,7 +193,7 @@ class UserControllerTest {
                 .andExpect(jsonPath("$.code").value(200))
                 .andExpect(jsonPath("$.data").value(true));
         
-        verify(userService).isEmailAvailable("new@example.com");
+        verify(userService).existsByEmail("new@example.com");
     }
     
     @Test

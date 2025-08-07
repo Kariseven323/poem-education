@@ -9,11 +9,10 @@
 // {{START_MODIFICATIONS}}
 package com.poem.education.config;
 
-import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.boot.jdbc.DataSourceBuilder;
+import org.springframework.beans.factory.annotation.Value;
+
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
@@ -50,16 +49,37 @@ import java.util.Properties;
 )
 public class DatabaseConfig {
 
+    @Value("${spring.datasource.url}")
+    private String url;
+
+    @Value("${spring.datasource.username}")
+    private String username;
+
+    @Value("${spring.datasource.password}")
+    private String password;
+
+    @Value("${spring.datasource.driver-class-name}")
+    private String driverClassName;
+
     /**
      * MySQL主数据源配置
      */
     @Primary
     @Bean(name = "mysqlDataSource")
-    @ConfigurationProperties(prefix = "spring.datasource")
     public DataSource mysqlDataSource() {
-        return DataSourceBuilder.create()
-                .type(HikariDataSource.class)
-                .build();
+        HikariDataSource dataSource = new HikariDataSource();
+        dataSource.setJdbcUrl(url);
+        dataSource.setUsername(username);
+        dataSource.setPassword(password);
+        dataSource.setDriverClassName(driverClassName);
+        dataSource.setMinimumIdle(5);
+        dataSource.setMaximumPoolSize(20);
+        dataSource.setAutoCommit(true);
+        dataSource.setIdleTimeout(30000);
+        dataSource.setPoolName("PoemEducationHikariCP");
+        dataSource.setMaxLifetime(1800000);
+        dataSource.setConnectionTimeout(30000);
+        return dataSource;
     }
 
     /**
