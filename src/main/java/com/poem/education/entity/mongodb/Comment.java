@@ -91,7 +91,8 @@ public class Comment {
      * 必填字段，枚举值：0（隐藏）、1（显示）
      */
     @NotNull(message = "状态不能为空")
-    @Pattern(regexp = "^[01]$", message = "状态必须为0或1")
+    @Min(value = 0, message = "状态值不能小于0")
+    @Max(value = 1, message = "状态值不能大于1")
     @Field("status")
     private Integer status;
     
