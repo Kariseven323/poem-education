@@ -1,0 +1,202 @@
+# {{RIPER-5+SMART-6:
+#   Action: "Parallel-Added"
+#   Task_ID: "46947b2e-3254-4ef7-a17e-0a2c73569f7a"
+#   Timestamp: "2025-08-07T10:50:34+08:00"
+#   Authoring_Subagent: "PM-快速模式"
+#   Principle_Applied: "Spring Boot配置文件标准格式"
+#   Quality_Check: "YAML格式正确，配置项完整。"
+# }}
+
+# 诗词交流鉴赏平台配置文件
+server:
+  port: 8080
+  servlet:
+    context-path: /
+    encoding:
+      charset: UTF-8
+      enabled: true
+      force: true
+
+spring:
+  profiles:
+    active: dev
+  
+  # 应用信息
+  application:
+    name: poem-education
+    
+  # MySQL数据源配置
+  datasource:
+    url: jdbc:mysql://localhost:3306/poem_education?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
+    username: poem_user
+    password: your_password
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    hikari:
+      minimum-idle: 5
+      maximum-pool-size: 20
+      auto-commit: true
+      idle-timeout: 30000
+      pool-name: PoemEducationHikariCP
+      max-lifetime: 1800000
+      connection-timeout: 30000
+      
+  # JPA配置
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQL8Dialect
+        format_sql: true
+        use_sql_comments: true
+        
+  # MongoDB配置
+  data:
+    mongodb:
+      host: localhost
+      port: 27017
+      database: poem_education
+      # username: poem_user
+      # password: your_password
+      
+  # Redis配置
+  redis:
+    host: localhost
+    port: 6379
+    database: 0
+    # password: your_password
+    timeout: 3000ms
+    lettuce:
+      pool:
+        max-active: 8
+        max-wait: -1ms
+        max-idle: 8
+        min-idle: 0
+
+# MyBatis Plus配置
+mybatis-plus:
+  configuration:
+    map-underscore-to-camel-case: true
+    cache-enabled: false
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+  global-config:
+    db-config:
+      logic-delete-field: deleted
+      logic-delete-value: 1
+      logic-not-delete-value: 0
+      id-type: auto
+  mapper-locations: classpath*:/mapper/**/*.xml
+
+# JWT配置
+jwt:
+  secret: poem-education-jwt-secret-key-2025
+  expiration: 86400 # 24小时，单位：秒
+  header: Authorization
+  prefix: Bearer
+
+# 日志配置
+logging:
+  level:
+    com.poem.education: debug
+    org.springframework.data.mongodb.core: debug
+    org.springframework.security: debug
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+  file:
+    name: logs/poem-education.log
+    max-size: 10MB
+    max-history: 30
+
+# 管理端点配置
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: always
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+
+# 应用信息
+info:
+  app:
+    name: 诗词交流鉴赏平台
+    description: 一个集诗词欣赏、创作、交流于一体的文化教育平台
+    version: 1.0.0
+    encoding: UTF-8
+    java:
+      version: 11
+
+---
+# 开发环境配置
+spring:
+  config:
+    activate:
+      on-profile: dev
+  jpa:
+    show-sql: true
+  data:
+    mongodb:
+      host: localhost
+      port: 27017
+      database: poem_education
+  redis:
+    host: localhost
+    port: 6379
+
+logging:
+  level:
+    com.poem.education: debug
+
+---
+# 测试环境配置
+spring:
+  config:
+    activate:
+      on-profile: test
+  datasource:
+    url: jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: 
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: true
+  data:
+    mongodb:
+      host: localhost
+      port: 27017
+      database: poem_education_test
+
+---
+# 生产环境配置
+spring:
+  config:
+    activate:
+      on-profile: prod
+  jpa:
+    show-sql: false
+  data:
+    mongodb:
+      host: ${MONGODB_HOST:localhost}
+      port: ${MONGODB_PORT:27017}
+      database: ${MONGODB_DATABASE:poem_education}
+      username: ${MONGODB_USERNAME:}
+      password: ${MONGODB_PASSWORD:}
+  redis:
+    host: ${REDIS_HOST:localhost}
+    port: ${REDIS_PORT:6379}
+    password: ${REDIS_PASSWORD:}
+
+logging:
+  level:
+    com.poem.education: info
+    org.springframework.data.mongodb.core: warn
+    org.springframework.security: warn
