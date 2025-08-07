@@ -11,6 +11,7 @@ import {
   UserOutlined
 } from '@ant-design/icons';
 import { guwenAPI } from '../utils/api';
+import { normalizeType } from '../utils/dataUtils';
 
 const { Title, Paragraph, Text } = Typography;
 
@@ -114,7 +115,7 @@ const PoemDetail = () => {
               <Space>
                 <Tag color="blue" icon={<BookOutlined />}>{poem.dynasty}</Tag>
                 <Tag color="green" icon={<UserOutlined />}>{poem.writer}</Tag>
-                {poem.type && poem.type.map(t => (
+                {normalizeType(poem.type).map(t => (
                   <Tag key={t} color="orange">{t}</Tag>
                 ))}
               </Space>

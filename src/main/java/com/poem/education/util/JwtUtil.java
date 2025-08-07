@@ -102,16 +102,28 @@ public class JwtUtil {
     
     /**
      * 验证JWT令牌是否有效
-     * 
+     *
      * @param token JWT令牌
      * @return 是否有效
      */
     public boolean validateToken(String token) {
         try {
+            // 检查token基本格式
+            if (token == null || token.trim().isEmpty()) {
+                logger.debug("JWT令牌为空");
+                return false;
+            }
+
+            // 检查JWT格式（应包含两个点号）
+            if (token.split("\\.").length != 3) {
+                logger.debug("JWT令牌格式错误: 应包含3个部分，实际包含{}个部分", token.split("\\.").length);
+                return false;
+            }
+
             getClaimsFromToken(token);
             return true;
         } catch (JwtException | IllegalArgumentException e) {
-            logger.error("JWT令牌验证失败: {}", e.getMessage());
+            logger.debug("JWT令牌验证失败: {}", e.getMessage());
             return false;
         }
     }

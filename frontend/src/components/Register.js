@@ -22,7 +22,7 @@ const Register = ({ onRegister }) => {
           password: values.password
         });
         if (loginResponse.code === 200) {
-          onRegister(loginResponse.data.user, loginResponse.data.token);
+          onRegister(loginResponse.data.user, loginResponse.data.accessToken);
         }
       } else {
         message.error(response.message || '注册失败');

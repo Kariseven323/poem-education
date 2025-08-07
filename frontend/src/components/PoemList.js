@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Card, List, Input, Select, Button, Space, Typography, Tag, Pagination, Spin, Empty } from 'antd';
 import { SearchOutlined, EyeOutlined, HeartOutlined, StarOutlined, BookOutlined } from '@ant-design/icons';
 import { guwenAPI } from '../utils/api';
+import { normalizeType } from '../utils/dataUtils';
 
 const { Search } = Input;
 const { Option } = Select;
@@ -174,7 +175,7 @@ const PoemList = () => {
                           <Space>
                             <Tag color="blue">{poem.dynasty}</Tag>
                             <Tag color="green">{poem.writer}</Tag>
-                            {poem.type && poem.type.map(t => (
+                            {normalizeType(poem.type).map(t => (
                               <Tag key={t} color="orange">{t}</Tag>
                             ))}
                           </Space>

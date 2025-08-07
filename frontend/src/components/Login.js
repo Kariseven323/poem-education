@@ -14,7 +14,7 @@ const Login = ({ onLogin }) => {
     try {
       const response = await authAPI.login(values);
       if (response.code === 200) {
-        onLogin(response.data.user, response.data.token);
+        onLogin(response.data.user, response.data.accessToken);
       } else {
         message.error(response.message || '登录失败');
       }

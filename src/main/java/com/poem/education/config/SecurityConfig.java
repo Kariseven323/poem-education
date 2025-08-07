@@ -9,6 +9,8 @@
 // {{START_MODIFICATIONS}}
 package com.poem.education.config;
 
+import com.poem.education.security.JwtAuthenticationFilter;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -17,6 +19,7 @@ import org.springframework.security.config.annotation.web.configuration.WebSecur
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -32,6 +35,9 @@ import java.util.Arrays;
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig extends WebSecurityConfigurerAdapter {
+
+    @Autowired
+    private JwtAuthenticationFilter jwtAuthenticationFilter;
     
     /**
      * 密码编码器Bean
@@ -87,6 +93,8 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
             // 允许公开的用户信息接口
             .antMatchers("/api/v1/users/{userId}").permitAll()
             .antMatchers("/api/v1/users/by-username/{username}").permitAll()
+            // 用户个人信息接口需要认证
+            .antMatchers("/api/v1/users/profile").authenticated()
             // 允许古文相关公开接口
             .antMatchers("/api/v1/guwen/**").permitAll()
             .antMatchers("/api/v1/writers/**").permitAll()
@@ -101,10 +109,13 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
             .anyRequest().authenticated()
             
             .and()
-            
+
+            // 添加JWT认证过滤器
+            .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
+
             // 禁用默认登录页面
             .formLogin().disable()
-            
+
             // 禁用HTTP Basic认证
             .httpBasic().disable();
     }

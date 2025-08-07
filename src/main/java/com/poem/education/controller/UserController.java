@@ -17,6 +17,8 @@ import com.poem.education.util.JwtUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletRequest;
@@ -118,22 +120,30 @@ public class UserController {
     }
     
     /**
-     * 从HTTP请求中获取当前用户ID
-     * 
+     * 从Spring Security认证信息中获取当前用户ID
+     *
      * @param request HTTP请求
      * @return 用户ID
      */
     private Long getCurrentUserId(HttpServletRequest request) {
+        // 优先从Spring Security认证信息中获取
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication != null && authentication.isAuthenticated()
+            && !"anonymousUser".equals(authentication.getPrincipal())) {
+            return (Long) authentication.getPrincipal();
+        }
+
+        // 如果Spring Security中没有认证信息，则手动解析JWT（兼容性处理）
         String authHeader = request.getHeader("Authorization");
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
             throw new RuntimeException("未提供有效的认证令牌");
         }
-        
+
         String token = authHeader.substring(7);
         if (!jwtUtil.validateToken(token)) {
             throw new RuntimeException("无效的认证令牌");
         }
-        
+
         return jwtUtil.getUserIdFromToken(token);
     }
 }
