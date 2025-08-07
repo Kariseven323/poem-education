@@ -1,0 +1,171 @@
+# {{RIPER-5+SMART-6:
+#   Action: "Optimized"
+#   Task_ID: "gitignore-optimization"
+#   Timestamp: "2025-08-07T09:04:17+08:00"
+#   Authoring_Subagent: "PM-快速模式"
+#   Principle_Applied: "Git版本控制最佳实践"
+#   Quality_Check: "针对Spring Boot + React项目的完整Git忽略规则"
+# }}
+
+# ===========================================
+# Git 版本控制忽略文件
+# 项目: poem-education (古诗词鉴赏交流平台)
+# 技术栈: Spring Boot + React + TypeScript + Maven + Vite
+# ===========================================
+
+# ========== Java/Maven 相关 ==========
+# 编译输出
+target/
+*.class
+*.jar
+*.war
+*.ear
+*.nar
+hs_err_pid*
+replay_pid*
+
+# Maven 特定
+.mvn/timing.properties
+.mvn/wrapper/maven-wrapper.jar
+
+# ========== Node.js/前端 相关 ==========
+# 依赖
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# 构建输出
+dist/
+dist-ssr/
+build/
+*.local
+
+# Vite
+.vite/
+
+# ========== 环境配置 ==========
+# 环境变量文件
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# 应用配置（可能包含敏感信息）
+application-local.yml
+application-local.properties
+application-dev.yml
+application-dev.properties
+
+# ========== 数据库 ==========
+# 本地数据库文件
+*.db
+*.sqlite
+*.sqlite3
+*.h2.db
+
+# 数据库备份
+*.sql.backup
+*.dump
+
+# ========== 日志文件 ==========
+logs/
+*.log
+*.log.*
+*.gz
+*.zip
+
+# ========== IDE 和编辑器 ==========
+# IntelliJ IDEA
+.idea/
+*.iws
+*.iml
+*.ipr
+out/
+
+# Eclipse
+.apt_generated
+.classpath
+.factorypath
+.project
+.settings
+.springBeans
+.sts4-cache
+bin/
+!**/src/main/**/bin/
+!**/src/test/**/bin/
+
+# VS Code
+.vscode/
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+*.code-workspace
+
+# Vim
+*.swp
+*.swo
+*~
+
+# ========== 操作系统 ==========
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon
+
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+*.stackdump
+[Dd]esktop.ini
+$RECYCLE.BIN/
+*.cab
+*.msi
+*.msix
+*.msm
+*.msp
+*.lnk
+
+# Linux
+*~
+
+# ========== 测试和覆盖率 ==========
+# 测试覆盖率
+coverage/
+*.lcov
+.nyc_output/
+
+# JUnit
+TEST-*.xml
+
+# ========== 临时文件 ==========
+*.tmp
+*.temp
+.cache/
+.temp/
+.tmp/
+
+# ========== 安全相关 ==========
+# 密钥文件
+*.pem
+*.key
+*.p12
+*.jks
+*.keystore
+
+# ========== 项目特定 ==========
+# 项目文档（如果不需要版本控制）
+# project_document/
+
+# 脚本生成的文件
+scripts/generated/
+
+# 本地配置
+local.properties

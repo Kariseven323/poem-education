@@ -1,0 +1,78 @@
+# {{RIPER-5+SMART-6:
+#   Action: "Optimized"
+#   Task_ID: "augmentignore-optimization"
+#   Timestamp: "2025-08-07T09:04:17+08:00"
+#   Authoring_Subagent: "PM-快速模式"
+#   Principle_Applied: "项目特定忽略规则优化"
+#   Quality_Check: "针对Spring Boot + React项目优化"
+# }}
+
+# ===========================================
+# Augment AI 代码分析忽略文件
+# 项目: poem-education (古诗词鉴赏交流平台)
+# 技术栈: Spring Boot + React + TypeScript
+# ===========================================
+
+# 构建产物和编译输出
+target/
+build/
+dist/
+out/
+*.class
+*.jar
+*.war
+
+# 依赖管理
+node_modules/
+.pnp/
+.pnp.js
+.yarn/
+
+# 日志文件
+logs/
+*.log
+*.log.*
+*.gz
+
+# 临时文件和缓存
+.cache/
+.temp/
+.tmp/
+*.tmp
+*.temp
+
+# IDE和编辑器文件
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# 操作系统文件
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# 环境配置文件（可能包含敏感信息）
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# 数据库文件
+*.db
+*.sqlite
+*.sqlite3
+
+# 大型配置文件（保留重要的package.json等）
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# 测试覆盖率报告
+coverage/
+.nyc_output/
+
+# 文档生成文件
+docs/generated/
