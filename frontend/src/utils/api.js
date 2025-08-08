@@ -109,13 +109,22 @@ export const sentenceAPI = {
   getById: (id) => api.get(`/sentences/${id}`),
 
   // 搜索名句
-  search: (data) => api.post('/sentences/search', data),
+  search: (params) => api.get('/sentences/search', { params }),
 
   // 获取热门名句
   getHot: (params) => api.get('/sentences/hot', { params }),
 
+  // 获取随机名句
+  getRandom: (params) => api.get('/sentences/random', { params }),
+
   // 获取所有朝代列表
   getDynasties: () => api.get('/sentences/dynasties'),
+
+  // 获取所有作者列表
+  getAuthors: () => api.get('/sentences/authors'),
+
+  // 获取所有出处列表
+  getSources: () => api.get('/sentences/sources'),
 };
 
 // 评论相关API

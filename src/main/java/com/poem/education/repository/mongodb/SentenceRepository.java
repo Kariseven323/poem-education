@@ -12,6 +12,7 @@ package com.poem.education.repository.mongodb;
 import com.poem.education.entity.mongodb.Sentence;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+
 import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.data.mongodb.repository.Query;
 import org.springframework.stereotype.Repository;
@@ -154,14 +155,7 @@ public interface SentenceRepository extends MongoRepository<Sentence, String> {
            "] }")
     Page<Sentence> findByAdvancedSearch(String name, String from, String author, String dynasty, Pageable pageable);
     
-    /**
-     * 查找随机名句
-     * 
-     * @param size 数量
-     * @return 名句列表
-     */
-    @Query("{ $sample: { size: ?0 } }")
-    List<Sentence> findRandomSentences(int size);
+    // 随机查询将在Service层使用MongoTemplate实现
     
     /**
      * 查找所有作者列表

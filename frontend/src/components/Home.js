@@ -26,11 +26,11 @@ const Home = () => {
   const loadHomeData = async () => {
     try {
       setLoading(true);
-      
-      // 并行加载数据
+
+      // 并行加载数据 - 使用随机名句API
       const [poemsRes, sentencesRes] = await Promise.allSettled([
         guwenAPI.getList({ page: 1, size: 6 }),
-        sentenceAPI.getList({ page: 1, size: 6 })
+        sentenceAPI.getRandom({ limit: 6 })
       ]);
 
       if (poemsRes.status === 'fulfilled' && poemsRes.value.code === 200) {
@@ -38,7 +38,8 @@ const Home = () => {
       }
 
       if (sentencesRes.status === 'fulfilled' && sentencesRes.value.code === 200) {
-        setHotSentences(sentencesRes.value.data?.list || []);
+        // 随机名句API返回的是数组，不是分页对象
+        setHotSentences(sentencesRes.value.data || []);
       }
 
     } catch (error) {
@@ -169,9 +170,21 @@ const Home = () => {
 
         {/* 精选名句 */}
         <Col span={12}>
-          <Card 
-            title="精选名句" 
-            extra={<Button type="link" href="/sentences">查看更多 <RightOutlined /></Button>}
+          <Card
+            title="精选名句"
+            extra={
+              <div>
+                <Button
+                  type="text"
+                  size="small"
+                  onClick={loadHomeData}
+                  style={{ marginRight: 8 }}
+                >
+                  换一批
+                </Button>
+                <Button type="link" href="/sentences">查看更多 <RightOutlined /></Button>
+              </div>
+            }
             loading={loading}
           >
             <List
