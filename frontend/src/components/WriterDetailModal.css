@@ -1,0 +1,204 @@
+/* {{RIPER-5+SMART-6:
+   Action: "Parallel-Added"
+   Task_ID: "writer-detail-modal-styles"
+   Timestamp: "2025-08-08T12:17:47+08:00"
+   Authoring_Subagent: "PM-内置顾问团"
+   Principle_Applied: "DRY (Don't Repeat Yourself)"
+   Quality_Check: "样式完整，支持响应式布局和良好的用户体验。"
+}} */
+/* {{START_MODIFICATIONS}} */
+
+.writer-detail-modal .ant-modal-content {
+  padding: 0;
+  overflow: hidden;
+}
+
+.writer-detail-modal .ant-modal-header {
+  border-bottom: none;
+  padding: 16px 24px 0;
+}
+
+.writer-detail-modal .ant-modal-body {
+  padding: 0;
+  height: 80vh;
+  max-height: 700px;
+  min-height: 500px;
+  overflow: hidden;
+}
+
+.writer-detail-modal .ant-modal-close {
+  top: 16px;
+  right: 16px;
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+  .writer-detail-modal .ant-modal-body {
+    padding: 0;
+    height: 85vh;
+  }
+
+  .writer-detail-modal {
+    width: 95% !important;
+    margin: 0 auto;
+  }
+
+  /* 移动设备上改为垂直布局 */
+  .writer-detail-modal .ant-row {
+    flex-direction: column;
+  }
+
+  .writer-detail-modal .ant-col {
+    width: 100% !important;
+    margin-bottom: 16px;
+  }
+
+  .writer-detail-modal .ant-card {
+    height: auto !important;
+    max-height: 300px;
+  }
+}
+
+@media (max-width: 1200px) {
+  .writer-detail-modal {
+    width: 95% !important;
+  }
+}
+
+@media (min-width: 1400px) {
+  .writer-detail-modal {
+    width: 1200px !important;
+  }
+}
+
+/* 强制Card显示滚动条 */
+.writer-detail-modal .scrollable-card {
+  height: 100% !important;
+  overflow-y: scroll !important;
+  overflow-x: hidden !important;
+  border: 1px solid #d9d9d9 !important;
+}
+
+.writer-detail-modal .scrollable-card .ant-card-body {
+  padding: 16px !important;
+  height: auto !important;
+}
+
+/* 滚动条样式 - 更明显的样式 */
+.writer-detail-modal .scrollable-card::-webkit-scrollbar {
+  width: 12px !important;
+}
+
+.writer-detail-modal .scrollable-card::-webkit-scrollbar-track {
+  background: #f5f5f5 !important;
+  border-radius: 6px !important;
+}
+
+.writer-detail-modal .scrollable-card::-webkit-scrollbar-thumb {
+  background: #888 !important;
+  border-radius: 6px !important;
+}
+
+.writer-detail-modal .scrollable-card::-webkit-scrollbar-thumb:hover {
+  background: #555 !important;
+}
+
+/* Firefox滚动条样式 */
+.writer-detail-modal .scrollable-card {
+  scrollbar-width: auto !important;
+  scrollbar-color: #888 #f5f5f5 !important;
+}
+
+/* 确保滚动条在Firefox中也显示 */
+.writer-detail-modal .scrollable-card {
+  scrollbar-width: thin;
+  scrollbar-color: #c1c1c1 #f1f1f1;
+}
+
+/* 左右两侧Card的特殊样式 */
+.writer-detail-modal .ant-card {
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  border: none;
+}
+
+.writer-detail-modal .ant-card .ant-card-body {
+  padding: 0;
+  height: 100%;
+}
+
+/* 卡片悬停效果 */
+.writer-detail-modal .ant-card {
+  transition: all 0.3s ease;
+}
+
+.writer-detail-modal .ant-card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+/* 标签样式优化 */
+.writer-detail-modal .ant-tag {
+  margin-bottom: 4px;
+  border-radius: 12px;
+  padding: 2px 8px;
+  font-size: 12px;
+}
+
+/* 头像容器样式 */
+.writer-detail-modal .ant-avatar {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* 结构化详细介绍样式 */
+.writer-detail-modal .detail-section {
+  margin-bottom: 24px;
+  padding: 16px;
+  background: #fafafa;
+  border-radius: 8px;
+  border-left: 4px solid #1890ff;
+}
+
+.writer-detail-modal .detail-section:last-child {
+  margin-bottom: 0;
+}
+
+.writer-detail-modal .section-title {
+  color: #1890ff;
+  font-size: 16px;
+  font-weight: 600;
+  margin: 0 0 12px 0;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #e8e8e8;
+}
+
+.writer-detail-modal .section-content {
+  color: #333;
+  line-height: 1.8;
+  font-size: 14px;
+  text-align: justify;
+  word-break: break-word;
+}
+
+.writer-detail-modal .section-content br {
+  margin-bottom: 8px;
+}
+
+/* 文本内容样式优化 */
+.writer-detail-modal .formatted-content {
+  line-height: 1.8;
+  font-size: 14px;
+  color: #333;
+  text-align: justify;
+  word-break: break-word;
+  white-space: normal;
+}
+
+.writer-detail-modal .formatted-content p {
+  margin-bottom: 12px;
+}
+
+.writer-detail-modal .formatted-content p:last-child {
+  margin-bottom: 0;
+}
+
+/* {{END_MODIFICATIONS}} */

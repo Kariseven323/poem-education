@@ -1,48 +1,33 @@
 import React, { useState, useEffect } from 'react';
-import { Card, List, Input, Select, Button, Space, Typography, Tag, Pagination, Spin, Empty, Avatar } from 'antd';
+import { Card, List, Input, Space, Typography, Tag, Pagination, Spin, Empty, Avatar } from 'antd';
 import { SearchOutlined, UserOutlined, BookOutlined } from '@ant-design/icons';
 import { writerAPI } from '../utils/api';
+import WriterDetailModal from './WriterDetailModal';
 
 const { Search } = Input;
-const { Option } = Select;
 const { Title, Text, Paragraph } = Typography;
 
 const WriterList = () => {
   const [writers, setWriters] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [dynasties, setDynasties] = useState([]);
+
   const [pagination, setPagination] = useState({
     current: 1,
     pageSize: 20,
     total: 0
   });
   const [filters, setFilters] = useState({
-    keyword: '',
-    dynasty: ''
+    keyword: ''
   });
 
-  // 组件挂载时加载朝代列表
-  useEffect(() => {
-    loadDynasties();
-  }, []);
+  // 弹窗相关状态
+  const [modalVisible, setModalVisible] = useState(false);
+  const [selectedWriterId, setSelectedWriterId] = useState(null);
 
   // 监听分页和筛选条件变化
   useEffect(() => {
     loadWriters();
-  }, [pagination.current, pagination.pageSize, filters.keyword, filters.dynasty]);
-
-  const loadDynasties = async () => {
-    try {
-      const response = await writerAPI.getDynasties();
-      if (response.code === 200) {
-        setDynasties(response.data || []);
-      }
-    } catch (error) {
-      console.error('Failed to load dynasties:', error);
-      // 如果API失败，使用默认值
-      setDynasties(['唐代', '宋代', '元代', '明代', '清代', '汉代', '魏晋', '南北朝']);
-    }
-  };
+  }, [pagination.current, pagination.pageSize, filters.keyword]);
 
   const loadWriters = async () => {
     setLoading(true);
@@ -52,13 +37,20 @@ const WriterList = () => {
         size: pagination.pageSize,
         ...filters
       };
-      
+
       // 移除空值
       Object.keys(params).forEach(key => {
         if (!params[key]) delete params[key];
       });
 
-      const response = await writerAPI.getList(params);
+      let response;
+      // 如果有keyword，使用搜索接口；否则使用列表接口
+      if (filters.keyword) {
+        response = await writerAPI.search(params);
+      } else {
+        response = await writerAPI.getList(params);
+      }
+
       if (response.code === 200) {
         setWriters(response.data?.list || []);
         setPagination(prev => ({
@@ -95,6 +87,18 @@ const WriterList = () => {
     }));
   };
 
+  // 处理作者点击
+  const handleWriterClick = (writerId) => {
+    setSelectedWriterId(writerId);
+    setModalVisible(true);
+  };
+
+  // 关闭弹窗
+  const handleModalClose = () => {
+    setModalVisible(false);
+    setSelectedWriterId(null);
+  };
+
 
 
   return (
@@ -118,22 +122,6 @@ const WriterList = () => {
               onSearch={handleSearch}
               enterButton={<SearchOutlined />}
             />
-            
-            <Select
-              placeholder="选择朝代"
-              style={{ width: 120 }}
-              value={filters.dynasty}
-              onChange={(value) => handleFilterChange('dynasty', value)}
-              allowClear
-            >
-              {dynasties.map(dynasty => (
-                <Option key={dynasty} value={dynasty}>{dynasty}</Option>
-              ))}
-            </Select>
-            
-            <Button type="primary" onClick={handleSearch} icon={<SearchOutlined />}>
-              搜索
-            </Button>
           </Space>
         </Space>
       </Card>
@@ -150,7 +138,7 @@ const WriterList = () => {
                 <Card
                   hoverable
                   className="poem-card"
-                  onClick={() => window.location.href = `/writers/${writer._id}`}
+                  onClick={() => handleWriterClick(writer.id)}
                   cover={
                     <div style={{ 
                       height: 200, 
@@ -245,6 +233,13 @@ const WriterList = () => {
           />
         </div>
       )}
+
+      {/* 作者详情弹窗 */}
+      <WriterDetailModal
+        visible={modalVisible}
+        onClose={handleModalClose}
+        writerId={selectedWriterId}
+      />
     </div>
   );
 };

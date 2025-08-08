@@ -119,13 +119,27 @@ public interface WriterRepository extends MongoRepository<Writer, String> {
     /**
      * 全文搜索作者
      * 使用MongoDB的文本索引进行搜索
-     * 
+     *
      * @param keyword 搜索关键字
      * @param pageable 分页参数
      * @return 作者分页列表
      */
     @Query("{ $text: { $search: ?0 } }")
     Page<Writer> findByTextSearch(String keyword, Pageable pageable);
+
+    /**
+     * 智能搜索作者 - 精确匹配优先
+     * 支持姓名和简介的模糊搜索，精确匹配排在前面
+     *
+     * @param keyword 搜索关键字
+     * @param pageable 分页参数
+     * @return 作者分页列表
+     */
+    @Query("{ $or: [ " +
+           "{ 'name': { $regex: ?0, $options: 'i' } }, " +
+           "{ 'simpleIntro': { $regex: ?0, $options: 'i' } } " +
+           "] }")
+    Page<Writer> findBySmartSearch(String keyword, Pageable pageable);
     
     /**
      * 高级搜索作者

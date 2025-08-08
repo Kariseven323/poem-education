@@ -8,7 +8,18 @@
 // }}
 // {{START_MODIFICATIONS}}
 
-import { normalizeType, normalizeStats, normalizeContent, validatePoem, normalizePoem } from '../dataUtils';
+import {
+  normalizeType,
+  normalizeStats,
+  normalizeContent,
+  validatePoem,
+  normalizePoem,
+  formatTextWithLineBreaks,
+  sanitizeHtmlContent,
+  parseAndFormatJsonText,
+  normalizeContentExtended,
+  validateAndCleanHtml
+} from '../dataUtils';
 
 describe('dataUtils', () => {
   describe('normalizeType', () => {
@@ -178,6 +189,87 @@ describe('dataUtils', () => {
     test('should return null for invalid poem', () => {
       expect(normalizePoem({})).toBe(null);
       expect(normalizePoem(null)).toBe(null);
+    });
+  });
+
+  // 新增工具函数测试
+  describe('formatTextWithLineBreaks', () => {
+    test('should convert line breaks correctly', () => {
+      expect(formatTextWithLineBreaks('第一行\n第二行')).toBe('第一行<br/>第二行');
+      expect(formatTextWithLineBreaks('第一行\\n第二行')).toBe('第一行<br/>第二行');
+      expect(formatTextWithLineBreaks('第一行\r\n第二行')).toBe('第一行<br/>第二行');
+    });
+
+    test('should handle tab characters', () => {
+      expect(formatTextWithLineBreaks('缩进\t内容')).toBe('缩进&nbsp;&nbsp;&nbsp;&nbsp;内容');
+    });
+
+    test('should handle empty values', () => {
+      expect(formatTextWithLineBreaks('')).toBe('');
+      expect(formatTextWithLineBreaks(null)).toBe('');
+      expect(formatTextWithLineBreaks(undefined)).toBe('');
+    });
+  });
+
+  describe('sanitizeHtmlContent', () => {
+    test('should remove dangerous HTML tags', () => {
+      const dangerousHtml = '<script>alert("xss")</script><p>安全内容</p>';
+      const result = sanitizeHtmlContent(dangerousHtml);
+      expect(result).not.toContain('<script>');
+      expect(result).toContain('<p>安全内容</p>');
+    });
+
+    test('should remove event handlers', () => {
+      const htmlWithEvents = '<div onclick="alert()">内容</div>';
+      const result = sanitizeHtmlContent(htmlWithEvents);
+      expect(result).not.toContain('onclick');
+    });
+
+    test('should handle line breaks based on options', () => {
+      const htmlWithBr = '第一行<br/>第二行';
+
+      const withBreaks = sanitizeHtmlContent(htmlWithBr, { allowLineBreaks: true });
+      expect(withBreaks).toContain('<br/>');
+
+      const withoutBreaks = sanitizeHtmlContent(htmlWithBr, { allowLineBreaks: false });
+      expect(withoutBreaks).not.toContain('<br/>');
+    });
+  });
+
+  describe('parseAndFormatJsonText', () => {
+    test('should parse JSON and format text correctly', () => {
+      const jsonStr = '{"人物生平":"第一段\\n第二段","主要成就":"成就内容"}';
+      const result = parseAndFormatJsonText(jsonStr);
+
+      expect(result).toHaveProperty('人物生平');
+      expect(result['人物生平']).toContain('<br/>');
+    });
+
+    test('should handle invalid JSON', () => {
+      const invalidJson = '这不是JSON格式的文本\\n包含换行符';
+      const result = parseAndFormatJsonText(invalidJson);
+
+      expect(typeof result).toBe('string');
+      expect(result).toContain('<br/>');
+    });
+  });
+
+  describe('validateAndCleanHtml', () => {
+    test('should validate safe HTML', () => {
+      const safeHtml = '<p>安全内容</p><br/>';
+      const result = validateAndCleanHtml(safeHtml);
+
+      expect(result.isValid).toBe(true);
+      expect(result.warnings).toHaveLength(0);
+    });
+
+    test('should detect dangerous HTML', () => {
+      const dangerousHtml = '<script>alert("xss")</script><p>内容</p>';
+      const result = validateAndCleanHtml(dangerousHtml);
+
+      expect(result.isValid).toBe(false);
+      expect(result.warnings.length).toBeGreaterThan(0);
+      expect(result.cleaned).not.toContain('<script>');
     });
   });
 });

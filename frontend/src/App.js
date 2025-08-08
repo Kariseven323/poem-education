@@ -103,6 +103,7 @@ function AppContent() {
       icon: <SettingOutlined />,
       label: 'API测试',
     },
+
   ];
 
   const userMenuItems = [
@@ -178,6 +179,7 @@ function AppContent() {
                 <Route path="/sentences" element={<SentenceList />} />
                 <Route path="/profile" element={user ? <UserProfile user={user} /> : <Navigate to="/login" />} />
                 <Route path="/api-test" element={<APITest />} />
+
               </Routes>
             </div>
           </Content>

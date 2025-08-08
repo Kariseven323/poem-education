@@ -121,4 +121,252 @@ export const normalizePoem = (poem) => {
   };
 };
 
+/**
+ * 处理换行符转换，将文本中的换行符转换为HTML换行标签
+ * @param {string} text - 原始文本内容
+ * @returns {string} - 转换后的HTML文本
+ */
+export const formatTextWithLineBreaks = (text) => {
+  if (!text || typeof text !== 'string') {
+    return '';
+  }
+
+  return text
+    .replace(/\\n/g, '<br/>') // 处理转义的换行符
+    .replace(/\n/g, '<br/>') // 处理实际的换行符
+    .replace(/\\r\\n/g, '<br/>') // 处理Windows换行符
+    .replace(/\r\n/g, '<br/>') // 处理实际的Windows换行符
+    .replace(/\\r/g, '<br/>') // 处理Mac换行符
+    .replace(/\r/g, '<br/>') // 处理实际的Mac换行符
+    .replace(/\\t/g, '&nbsp;&nbsp;&nbsp;&nbsp;') // 处理制表符
+    .replace(/\t/g, '&nbsp;&nbsp;&nbsp;&nbsp;'); // 处理实际的制表符
+};
+
+/**
+ * 安全的HTML内容处理，提供XSS防护
+ * @param {string} htmlContent - 包含HTML标签的内容
+ * @param {object} options - 配置选项
+ * @param {boolean} options.allowLineBreaks - 是否允许换行标签，默认true
+ * @param {boolean} options.allowBasicFormatting - 是否允许基本格式化标签，默认false
+ * @returns {string} - 安全处理后的HTML内容
+ */
+export const sanitizeHtmlContent = (htmlContent, options = {}) => {
+  if (!htmlContent || typeof htmlContent !== 'string') {
+    return '';
+  }
+
+  const {
+    allowLineBreaks = true,
+    allowBasicFormatting = false
+  } = options;
+
+  // 移除危险的HTML标签和属性
+  let sanitized = htmlContent
+    .replace(/<script[^>]*>.*?<\/script>/gi, '') // 移除script标签
+    .replace(/<iframe[^>]*>.*?<\/iframe>/gi, '') // 移除iframe标签
+    .replace(/<object[^>]*>.*?<\/object>/gi, '') // 移除object标签
+    .replace(/<embed[^>]*>/gi, '') // 移除embed标签
+    .replace(/<form[^>]*>.*?<\/form>/gi, '') // 移除form标签
+    .replace(/<input[^>]*>/gi, '') // 移除input标签
+    .replace(/<textarea[^>]*>.*?<\/textarea>/gi, '') // 移除textarea标签
+    .replace(/<select[^>]*>.*?<\/select>/gi, '') // 移除select标签
+    .replace(/javascript:/gi, '') // 移除javascript协议
+    .replace(/vbscript:/gi, '') // 移除vbscript协议
+    .replace(/on\w+\s*=/gi, '') // 移除事件处理器
+    .replace(/style\s*=/gi, ''); // 移除style属性
+
+  // 如果不允许换行标签，移除它们
+  if (!allowLineBreaks) {
+    sanitized = sanitized.replace(/<br\s*\/?>/gi, ' ');
+  }
+
+  // 如果不允许基本格式化标签，移除它们
+  if (!allowBasicFormatting) {
+    sanitized = sanitized
+      .replace(/<\/?b>/gi, '')
+      .replace(/<\/?strong>/gi, '')
+      .replace(/<\/?i>/gi, '')
+      .replace(/<\/?em>/gi, '')
+      .replace(/<\/?u>/gi, '')
+      .replace(/<\/?p>/gi, '')
+      .replace(/<\/?div[^>]*>/gi, '');
+  }
+
+  return sanitized.trim();
+};
+
+/**
+ * 解析JSON格式的文本内容并进行格式化处理
+ * @param {string} jsonStr - JSON格式的字符串
+ * @param {object} options - 配置选项
+ * @param {boolean} options.formatLineBreaks - 是否格式化换行符，默认true
+ * @param {boolean} options.sanitizeHtml - 是否进行HTML安全处理，默认true
+ * @returns {object|string} - 解析后的对象或格式化后的字符串
+ */
+export const parseAndFormatJsonText = (jsonStr, options = {}) => {
+  if (!jsonStr || typeof jsonStr !== 'string') {
+    return '';
+  }
+
+  const {
+    formatLineBreaks = true,
+    sanitizeHtml = true
+  } = options;
+
+  try {
+    const parsedData = JSON.parse(jsonStr);
+
+    if (typeof parsedData === 'object' && parsedData !== null) {
+      // 如果是对象，递归处理每个字段
+      const processedData = {};
+
+      for (const [key, value] of Object.entries(parsedData)) {
+        if (typeof value === 'string') {
+          let processedValue = value;
+
+          if (formatLineBreaks) {
+            processedValue = formatTextWithLineBreaks(processedValue);
+          }
+
+          if (sanitizeHtml) {
+            processedValue = sanitizeHtmlContent(processedValue, {
+              allowLineBreaks: formatLineBreaks,
+              allowBasicFormatting: false
+            });
+          }
+
+          processedData[key] = processedValue;
+        } else {
+          processedData[key] = value;
+        }
+      }
+
+      return processedData;
+    } else {
+      // 如果是基本类型，直接返回
+      return parsedData;
+    }
+  } catch (error) {
+    console.warn('JSON解析失败，返回格式化后的原始字符串:', error.message);
+
+    // JSON解析失败时，作为普通文本处理
+    let processedText = jsonStr;
+
+    if (formatLineBreaks) {
+      processedText = formatTextWithLineBreaks(processedText);
+    }
+
+    if (sanitizeHtml) {
+      processedText = sanitizeHtmlContent(processedText, {
+        allowLineBreaks: formatLineBreaks,
+        allowBasicFormatting: false
+      });
+    }
+
+    return processedText;
+  }
+};
+
+/**
+ * 扩展的内容标准化函数，支持HTML内容和换行符处理
+ * @param {string} content - 原始内容
+ * @param {object} options - 配置选项
+ * @param {number} options.maxLength - 最大长度限制
+ * @param {boolean} options.allowHtml - 是否允许HTML内容，默认false
+ * @param {boolean} options.formatLineBreaks - 是否格式化换行符，默认false
+ * @returns {string} - 处理后的内容
+ */
+export const normalizeContentExtended = (content, options = {}) => {
+  if (!content || typeof content !== 'string') {
+    return '';
+  }
+
+  const {
+    maxLength = null,
+    allowHtml = false,
+    formatLineBreaks = false
+  } = options;
+
+  let processed = content;
+
+  if (allowHtml) {
+    // 如果允许HTML，进行安全处理
+    processed = sanitizeHtmlContent(processed, {
+      allowLineBreaks: formatLineBreaks,
+      allowBasicFormatting: true
+    });
+  } else {
+    // 如果不允许HTML，进行转义
+    processed = normalizeContent(processed);
+
+    if (formatLineBreaks) {
+      // 在转义后处理换行符
+      processed = formatTextWithLineBreaks(processed);
+    }
+  }
+
+  // 长度限制处理
+  if (maxLength && processed.length > maxLength) {
+    // 如果包含HTML标签，需要智能截断
+    if (allowHtml && processed.includes('<')) {
+      // 简单的HTML标签感知截断
+      const textOnly = processed.replace(/<[^>]*>/g, '');
+      if (textOnly.length > maxLength) {
+        const truncated = textOnly.substring(0, maxLength);
+        processed = truncated + '...';
+      }
+    } else {
+      processed = processed.substring(0, maxLength) + '...';
+    }
+  }
+
+  return processed;
+};
+
+/**
+ * 验证和清理HTML内容的工具函数
+ * @param {string} htmlContent - HTML内容
+ * @returns {object} - 验证结果和清理后的内容
+ */
+export const validateAndCleanHtml = (htmlContent) => {
+  if (!htmlContent || typeof htmlContent !== 'string') {
+    return {
+      isValid: false,
+      cleaned: '',
+      warnings: ['内容为空或不是字符串类型']
+    };
+  }
+
+  const warnings = [];
+  let cleaned = htmlContent;
+
+  // 检查危险内容
+  const dangerousPatterns = [
+    { pattern: /<script/gi, message: '包含script标签' },
+    { pattern: /javascript:/gi, message: '包含javascript协议' },
+    { pattern: /on\w+\s*=/gi, message: '包含事件处理器' },
+    { pattern: /<iframe/gi, message: '包含iframe标签' },
+    { pattern: /<object/gi, message: '包含object标签' },
+    { pattern: /<embed/gi, message: '包含embed标签' }
+  ];
+
+  dangerousPatterns.forEach(({ pattern, message }) => {
+    if (pattern.test(htmlContent)) {
+      warnings.push(message);
+    }
+  });
+
+  // 清理内容
+  cleaned = sanitizeHtmlContent(cleaned, {
+    allowLineBreaks: true,
+    allowBasicFormatting: true
+  });
+
+  return {
+    isValid: warnings.length === 0,
+    cleaned,
+    warnings
+  };
+};
+
 // {{END_MODIFICATIONS}}

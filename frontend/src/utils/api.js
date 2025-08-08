@@ -94,7 +94,7 @@ export const writerAPI = {
   getList: (params) => api.get('/writers', { params }),
 
   // 搜索作者
-  search: (data) => api.post('/writers/search', data),
+  search: (params) => api.get('/writers/search', { params }),
 
   // 获取所有朝代列表
   getDynasties: () => api.get('/writers/dynasties'),
