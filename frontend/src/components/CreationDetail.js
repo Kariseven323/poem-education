@@ -42,7 +42,8 @@ import {
   LockOutlined
 } from '@ant-design/icons';
 import { useParams, useNavigate } from 'react-router-dom';
-import { creationAPI } from '../utils/api';
+import { creationAPI, statsAPI } from '../utils/api';
+import viewTracker from '../utils/viewTracker';
 import RadarChart from './RadarChart';
 import moment from 'moment';
 
@@ -62,6 +63,10 @@ const CreationDetail = () => {
   const [aiScoring, setAiScoring] = useState(false);
   const [liking, setLiking] = useState(false);
   const [publishing, setPublishing] = useState(false);
+  const [realTimeStats, setRealTimeStats] = useState(null);
+  const [statsLoading, setStatsLoading] = useState(false);
+  const [advice, setAdvice] = useState(null);
+  const [adviceLoading, setAdviceLoading] = useState(false);
 
   // 获取当前用户信息
   const getCurrentUser = () => {
@@ -80,9 +85,18 @@ const CreationDetail = () => {
       const response = await creationAPI.getById(id);
       if (response.code === 200) {
         setCreation(response.data);
+        // 记录访问并拉取实时统计
+        viewTracker.recordCreationView(id, { silent: true });
+        loadRealTimeStats();
         // 如果有AI评分，同时加载雷达图数据
         if (response.data.aiScore) {
           loadRadarData();
+        }
+        // 如果已有持久化的AI修改建议
+        if (response.data.aiAdvice && response.data.aiAdvice.lastSuggestion) {
+          setAdvice(response.data.aiAdvice);
+        } else {
+          setAdvice(null);
         }
       } else {
         message.error(response.message || '获取创作详情失败');
@@ -92,6 +106,50 @@ const CreationDetail = () => {
       message.error('获取创作详情失败，请稍后重试');
     } finally {
       setLoading(false);
+    }
+  };
+
+  // 获取/刷新 AI 修改建议（持久化）
+  const handleGetAdvice = async () => {
+    if (!currentUser) {
+      message.warning('请先登录');
+      return;
+    }
+    if (!isAuthor) {
+      message.warning('仅作者可获取AI修改建议');
+      return;
+    }
+    setAdviceLoading(true);
+    try {
+      const resp = await creationAPI.requestSuggestions(id);
+      if (resp.code === 200) {
+        message.success('AI修改建议已生成');
+        // 重新拉取详情，获取持久化后的建议
+        loadCreation();
+      } else {
+        message.error(resp.message || '获取AI修改建议失败');
+      }
+    } catch (e) {
+      console.error('获取AI修改建议失败:', e);
+      message.error('获取AI修改建议失败');
+    } finally {
+      setAdviceLoading(false);
+    }
+  };
+
+  // 加载实时统计（浏览/点赞/评论等）
+  const loadRealTimeStats = async () => {
+    if (!id) return;
+    setStatsLoading(true);
+    try {
+      const response = await statsAPI.getContentStats(id, 'creation');
+      if (response.success && response.data) {
+        setRealTimeStats(response.data);
+      }
+    } catch (e) {
+      // 忽略统计异常
+    } finally {
+      setStatsLoading(false);
     }
   };
 
@@ -155,6 +213,8 @@ const CreationDetail = () => {
       if (response.code === 200) {
         setCreation(response.data);
         message.success('操作成功');
+        // 刷新统计
+        loadRealTimeStats();
       } else {
         message.error(response.message || '操作失败');
       }
@@ -253,16 +313,16 @@ const CreationDetail = () => {
   const isAuthor = currentUser && currentUser.id === creation.authorId;
 
   return (
-    <div style={{ padding: '24px', maxWidth: '1200px', margin: '0 auto' }}>
-      <Row gutter={24}>
+    <div style={{ padding: '16px 24px', maxWidth: '1400px', margin: '0 auto' }}>
+      <Row gutter={[24, 24]} justify="space-between" align="top">
         {/* 左侧：创作详情 */}
-        <Col xs={24} lg={14}>
-          <Card>
+        <Col xs={24} md={14} lg={12} xl={12}>
+          <Card bodyStyle={{ padding: 20 }}>
             {/* 标题和操作按钮 */}
             <div style={{ marginBottom: 24 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                 <div style={{ flex: 1 }}>
-                  <Title level={1} style={{ marginBottom: 8 }}>
+                  <Title level={2} style={{ marginBottom: 8 }}>
                     {creation.title}
                   </Title>
                   <Space wrap>
@@ -320,7 +380,7 @@ const CreationDetail = () => {
             {/* 作品内容 */}
             <div style={{ 
               textAlign: 'center', 
-              padding: '32px',
+              padding: '24px',
               background: '#fafafa',
               borderRadius: '8px',
               marginBottom: 24
@@ -328,11 +388,13 @@ const CreationDetail = () => {
               <div 
                 className="poem-content" 
                 style={{ 
-                  fontSize: '20px',
-                  lineHeight: '2.2',
+                  fontSize: '18px',
+                  lineHeight: '2',
                   fontFamily: 'KaiTi, 楷体, serif',
                   whiteSpace: 'pre-line',
-                  color: '#262626'
+                  color: '#262626',
+                  maxWidth: 820,
+                  margin: '0 auto'
                 }}
               >
                 {creation.content}
@@ -378,10 +440,10 @@ const CreationDetail = () => {
                   {creation.style || '未分类'}
                 </Descriptions.Item>
                 <Descriptions.Item label="点赞数" span={1}>
-                  {creation.likeCount || 0}
+                  { (realTimeStats?.likeCount ?? creation.likeCount) || 0 }
                 </Descriptions.Item>
                 <Descriptions.Item label="评论数" span={1}>
-                  {creation.commentCount || 0}
+                  { (realTimeStats?.commentCount ?? creation.commentCount) || 0 }
                 </Descriptions.Item>
                 <Descriptions.Item label="公开状态" span={3}>
                   <Space>
@@ -428,15 +490,15 @@ const CreationDetail = () => {
           </Card>
         </Col>
 
-        {/* 右侧：AI评分雷达图 */}
-        <Col xs={24} lg={10}>
+        {/* 右侧：AI评分雷达图 + 建议 */}
+        <Col xs={24} md={10} lg={12} xl={12}>
           {creation.aiScore ? (
             <RadarChart
               data={radarData}
               loading={radarLoading}
               showTitle={true}
               showCard={true}
-              height="500px"
+              height="480px"
             />
           ) : (
             <Card 
@@ -535,6 +597,48 @@ const CreationDetail = () => {
               )}
             </Card>
           )}
+
+          {/* AI修改建议（持久化显示 + 按钮刷新） */}
+          <Card
+            title="AI修改建议"
+            style={{ marginTop: 16 }}
+            size="small"
+            extra={
+              isAuthor ? (
+                <Button type="primary" loading={adviceLoading} onClick={handleGetAdvice}>
+                  {advice ? '刷新建议' : '获取AI修改建议'}
+                </Button>
+              ) : null
+            }
+          >
+            {advice && (advice.lastSuggestion || advice.thinkingProcess) ? (
+              <>
+                {advice.thinkingProcess && (
+                  <div style={{ marginBottom: 8 }}>
+                    <Text type="secondary" style={{ display: 'block', marginBottom: 4 }}>模型思考过程（折叠）：</Text>
+                    <details>
+                      <summary style={{ cursor: 'pointer' }}>
+                        <BulbOutlined style={{ color: '#faad14', marginRight: 6 }} /> 查看/收起思考过程
+                      </summary>
+                      <div style={{ whiteSpace: 'pre-wrap', marginTop: 8, background: '#fafafa', padding: 8, borderRadius: 4 }}>
+                        {advice.thinkingProcess}
+                      </div>
+                    </details>
+                  </div>
+                )}
+                {advice.lastSuggestion && (
+                  <Paragraph style={{ whiteSpace: 'pre-wrap' }}>{advice.lastSuggestion}</Paragraph>
+                )}
+                {advice.updatedAt && (
+                  <Text type="secondary" style={{ fontSize: 12 }}>
+                    更新时间：{moment(advice.updatedAt).format('YYYY-MM-DD HH:mm:ss')}
+                  </Text>
+                )}
+              </>
+            ) : (
+              <Text type="secondary">暂无AI修改建议，{isAuthor ? '点击右上角按钮生成' : '仅作者可生成'}</Text>
+            )}
+          </Card>
         </Col>
       </Row>
     </div>

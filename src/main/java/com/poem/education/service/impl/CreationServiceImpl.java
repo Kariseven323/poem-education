@@ -292,6 +292,35 @@ public class CreationServiceImpl implements CreationService {
             return CompletableFuture.completedFuture(false);
         }
     }
+
+    @Override
+    @Transactional(readOnly = true)
+    public String getRevisionSuggestions(Long userId, String id) {
+        logger.info("用户{}请求AI修改建议，创作ID：{}", userId, id);
+
+        Creation creation = getCreationEntity(id);
+        if (!creation.getUserId().equals(userId)) {
+            throw new BusinessException(ErrorCode.CREATION_NO_PERMISSION, "无权限获取此创作的AI建议");
+        }
+
+        String suggestionRaw = aiScoreService.generateRevisionSuggestions(
+                creation.getTitle(),
+                creation.getContent(),
+                creation.getStyle()
+        );
+
+        // 提取正文与思考过程（兼容 deepseek r1 的<think>输出）
+        AIScoreService.ParsedAdvice parsed = aiScoreService.parseAdviceWithThinking(suggestionRaw);
+
+        // 持久化最近一次建议（含thinkingProcess）
+        Creation.AiAdvice advice = new Creation.AiAdvice(parsed.content, LocalDateTime.now());
+        advice.setThinkingProcess(parsed.thinking);
+        creation.setAiAdvice(advice);
+        creation.setUpdatedAt(LocalDateTime.now());
+        creationRepository.save(creation);
+
+        return parsed.content;
+    }
     
     @Override
     public RadarDataDTO getRadarData(String id) {
@@ -487,6 +516,15 @@ public class CreationServiceImpl implements CreationService {
             }
 
             dto.setAiScore(aiScoreDTO);
+        }
+
+        // 转换AI修改建议
+        if (creation.getAiAdvice() != null) {
+            CreationDTO.AiAdviceDTO adviceDTO = new CreationDTO.AiAdviceDTO();
+            adviceDTO.setLastSuggestion(creation.getAiAdvice().getLastSuggestion());
+            adviceDTO.setUpdatedAt(creation.getAiAdvice().getUpdatedAt());
+            adviceDTO.setThinkingProcess(creation.getAiAdvice().getThinkingProcess());
+            dto.setAiAdvice(adviceDTO);
         }
 
         return dto;

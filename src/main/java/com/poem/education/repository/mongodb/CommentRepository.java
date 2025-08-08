@@ -108,6 +108,15 @@ public interface CommentRepository extends MongoRepository<Comment, String> {
      * @return 评论分页列表
      */
     Page<Comment> findByPathStartingWithAndStatus(String pathPrefix, Integer status, Pageable pageable);
+
+    /**
+     * 硬删除指定路径前缀的所有子评论
+     * 用于在删除父评论时，级联删除其所有后代评论
+     *
+     * @param pathPrefix 路径前缀（例如：父评论path + "."）
+     * @return 删除的文档数量
+     */
+    long deleteByPathStartingWith(String pathPrefix);
     
     /**
      * 根据评论层级查找评论

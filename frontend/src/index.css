@@ -72,6 +72,18 @@ code {
   white-space: pre-line;
 }
 
+/* CreationDetail 布局微调，减少左侧留白 */
+.creation-detail-container {
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+@media (min-width: 992px) {
+  .creation-detail-container .ant-row {
+    align-items: flex-start;
+  }
+}
+
 .poem-meta {
   color: #666;
   font-size: 14px;

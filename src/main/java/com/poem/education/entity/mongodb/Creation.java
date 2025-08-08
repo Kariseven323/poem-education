@@ -146,6 +146,12 @@ public class Creation {
      */
     @Field("commentCount")
     private Integer commentCount;
+
+    /**
+     * AI修改建议（持久化最近一次）
+     */
+    @Field("aiAdvice")
+    private AiAdvice aiAdvice;
     
     /**
      * AI评分嵌套类
@@ -383,6 +389,54 @@ public class Creation {
             }
         }
     }
+
+    /**
+     * AI修改建议数据结构（仅持久化最近一次）
+     */
+    public static class AiAdvice {
+        @Field("lastSuggestion")
+        private String lastSuggestion;
+
+        @Field("updatedAt")
+        private LocalDateTime updatedAt;
+
+        /**
+         * AI思考过程（可选，供前端折叠展示）
+         */
+        @Field("thinkingProcess")
+        private String thinkingProcess;
+
+        public AiAdvice() {}
+
+        public AiAdvice(String lastSuggestion, LocalDateTime updatedAt) {
+            this.lastSuggestion = lastSuggestion;
+            this.updatedAt = updatedAt;
+        }
+
+        public String getLastSuggestion() {
+            return lastSuggestion;
+        }
+
+        public void setLastSuggestion(String lastSuggestion) {
+            this.lastSuggestion = lastSuggestion;
+        }
+
+        public LocalDateTime getUpdatedAt() {
+            return updatedAt;
+        }
+
+        public void setUpdatedAt(LocalDateTime updatedAt) {
+            this.updatedAt = updatedAt;
+        }
+
+        public String getThinkingProcess() {
+            return thinkingProcess;
+        }
+
+        public void setThinkingProcess(String thinkingProcess) {
+            this.thinkingProcess = thinkingProcess;
+        }
+    }
     
     // 默认构造函数
     public Creation() {
@@ -511,6 +565,14 @@ public class Creation {
 
     public void setCommentCount(Integer commentCount) {
         this.commentCount = commentCount;
+    }
+
+    public AiAdvice getAiAdvice() {
+        return aiAdvice;
+    }
+
+    public void setAiAdvice(AiAdvice aiAdvice) {
+        this.aiAdvice = aiAdvice;
     }
     
     @Override

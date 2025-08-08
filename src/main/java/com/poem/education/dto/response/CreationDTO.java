@@ -88,6 +88,11 @@ public class CreationDTO {
      * 是否公开
      */
     private Boolean isPublic;
+
+    /**
+     * 最近一次AI修改建议（可选）
+     */
+    private AiAdviceDTO aiAdvice;
     
     // 默认构造函数
     public CreationDTO() {
@@ -197,6 +202,14 @@ public class CreationDTO {
     public void setIsPublic(Boolean isPublic) {
         this.isPublic = isPublic;
     }
+
+    public AiAdviceDTO getAiAdvice() {
+        return aiAdvice;
+    }
+
+    public void setAiAdvice(AiAdviceDTO aiAdvice) {
+        this.aiAdvice = aiAdvice;
+    }
     
     @Override
     public String toString() {
@@ -214,6 +227,7 @@ public class CreationDTO {
                 ", likeCount=" + likeCount +
                 ", commentCount=" + commentCount +
                 ", isPublic=" + isPublic +
+                ", aiAdvice=" + aiAdvice +
                 '}';
     }
     
@@ -327,6 +341,49 @@ public class CreationDTO {
                     ", scoredAt=" + scoredAt +
                     ", dimensions=" + dimensions +
                     ", thinkingProcess='" + thinkingProcess + '\'' +
+                    '}';
+        }
+    }
+
+    /**
+     * AI修改建议DTO（最近一次）
+     */
+    public static class AiAdviceDTO {
+        private String lastSuggestion;
+        @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+        private LocalDateTime updatedAt;
+        private String thinkingProcess;
+
+        public String getLastSuggestion() {
+            return lastSuggestion;
+        }
+
+        public void setLastSuggestion(String lastSuggestion) {
+            this.lastSuggestion = lastSuggestion;
+        }
+
+        public LocalDateTime getUpdatedAt() {
+            return updatedAt;
+        }
+
+        public void setUpdatedAt(LocalDateTime updatedAt) {
+            this.updatedAt = updatedAt;
+        }
+
+        public String getThinkingProcess() {
+            return thinkingProcess;
+        }
+
+        public void setThinkingProcess(String thinkingProcess) {
+            this.thinkingProcess = thinkingProcess;
+        }
+
+        @Override
+        public String toString() {
+            return "AiAdviceDTO{" +
+                    "lastSuggestion='" + lastSuggestion + '\'' +
+                    ", updatedAt=" + updatedAt +
+                    ", thinkingProcess='" + (thinkingProcess != null ? (thinkingProcess.length() > 20 ? thinkingProcess.substring(0,20)+"..." : thinkingProcess) : null) + '\'' +
                     '}';
         }
     }

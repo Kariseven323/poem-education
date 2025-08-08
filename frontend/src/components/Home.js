@@ -40,26 +40,38 @@ const Home = () => {
     try {
       setLoading(true);
 
-      // 并行加载数据 - 包括统计数据、诗词列表和随机名句
-      const [statsRes, poemsRes, sentencesRes] = await Promise.allSettled([
+      // 并行加载：全局统计 + 热门古文（真实API）+ 随机名句
+      const [statsRes, hotRes, sentencesRes] = await Promise.allSettled([
         statsAPI.getGlobalStats(),
-        guwenAPI.getList({ page: 1, size: 6 }),
+        guwenAPI.getHot({ period: 'daily', limit: 6 }),
         sentenceAPI.getRandom({ limit: 6 })
       ]);
 
-      // 处理统计数据
+      // 统计数据
       if (statsRes.status === 'fulfilled' && statsRes.value.code === 200) {
         setGlobalStats(statsRes.value.data);
       }
 
-      // 处理诗词列表
-      if (poemsRes.status === 'fulfilled' && poemsRes.value.code === 200) {
-        setHotPoems(poemsRes.value.data?.list || []);
+      // 热门诗词（真实后端）
+      if (hotRes.status === 'fulfilled' && hotRes.value.code === 200) {
+        const baseList = hotRes.value.data || [];
+        // 并行补齐统计（若DTO未携带stats字段）
+        const enriched = await Promise.all(baseList.map(async (p) => {
+          try {
+            const s = await statsAPI.getContentStats(p.id, 'guwen');
+            if (s.success && s.data) return { ...p, stats: s.data };
+          } catch (_) {}
+          return p;
+        }));
+        setHotPoems(enriched);
+      } else {
+        // 兜底策略：退回分页列表
+        const listRes = await guwenAPI.getList({ page: 1, size: 6 });
+        if (listRes.code === 200) setHotPoems(listRes.data?.list || []);
       }
 
-      // 处理随机名句
+      // 随机名句
       if (sentencesRes.status === 'fulfilled' && sentencesRes.value.code === 200) {
-        // 随机名句API返回的是数组，不是分页对象
         setHotSentences(sentencesRes.value.data || []);
       }
 

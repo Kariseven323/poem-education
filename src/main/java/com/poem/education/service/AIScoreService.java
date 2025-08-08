@@ -63,5 +63,57 @@ public interface AIScoreService {
      * @return 服务可用性状态
      */
     boolean isServiceAvailable();
+
+    /**
+     * 生成AI修改建议（同步）
+     * 根据作品标题、内容、风格给出可执行的修改建议，便于作者改进作品
+     *
+     * @param title  标题
+     * @param content 内容
+     * @param style 风格
+     * @return 修改建议文本（纯文本/Markdown）
+     */
+    String generateRevisionSuggestions(String title, String content, String style);
+
+    /**
+     * 解析含<think>...</think>的模型输出，提取可展示的正文与思考过程
+     */
+    default ParsedAdvice parseAdviceWithThinking(String raw) {
+        if (raw == null || raw.isEmpty()) return new ParsedAdvice("", null);
+        String thinking = null;
+        String content = raw;
+        // 支持多层<think>嵌套，逐步剥离
+        StringBuilder allThinking = new StringBuilder();
+        String remaining = raw;
+        while (remaining.contains("<think>") && remaining.contains("</think>")) {
+            int s = remaining.indexOf("<think>") + 7;
+            int e = remaining.indexOf("</think>");
+            if (s - 7 < 0 || e <= s) break;
+            String segment = remaining.substring(s, e).trim();
+            if (!segment.isEmpty()) {
+                if (allThinking.length() > 0) allThinking.append("\n\n");
+                allThinking.append(segment);
+            }
+            remaining = remaining.substring(0, s - 7) + remaining.substring(e + 8);
+        }
+        content = remaining.trim();
+        thinking = allThinking.length() > 0 ? allThinking.toString() : null;
+        return new ParsedAdvice(content, thinking);
+    }
+
+    class ParsedAdvice {
+        public final String content;
+        public final String thinking;
+        public ParsedAdvice(String content, String thinking) {
+            this.content = content;
+            this.thinking = thinking;
+        }
+    }
+
+    /**
+     * 生成AI修改建议（异步）
+     */
+    @Async
+    CompletableFuture<String> generateRevisionSuggestionsAsync(String title, String content, String style);
 }
 // {{END_MODIFICATIONS}}

@@ -130,5 +130,10 @@ public interface CreationService {
      * @return 创作分页列表
      */
     PageResult<CreationDTO> searchCreations(String keyword, Integer page, Integer size, String style);
+
+    /**
+     * 获取AI修改建议（仅作者可调）
+     */
+    String getRevisionSuggestions(Long userId, String id);
 }
 // {{END_MODIFICATIONS}}

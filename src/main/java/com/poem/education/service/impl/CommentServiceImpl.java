@@ -9,6 +9,7 @@ import com.poem.education.exception.BusinessException;
 import com.poem.education.repository.mongodb.CommentRepository;
 import com.poem.education.repository.mysql.UserRepository;
 import com.poem.education.service.CommentService;
+import com.poem.education.service.ContentStatsService;
 import com.poem.education.constant.ErrorCode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,6 +45,9 @@ public class CommentServiceImpl implements CommentService {
     
     @Autowired
     private UserRepository userRepository;
+
+    @Autowired
+    private ContentStatsService contentStatsService;
     
     @Override
     @Transactional
@@ -126,6 +130,15 @@ public class CommentServiceImpl implements CommentService {
             savedComment = commentRepository.save(savedComment);
         }
         
+        // 更新内容统计：评论数 +1（包含回复）
+        try {
+            String targetIdHex = targetId.toHexString();
+            boolean ok = contentStatsService.updateContentStatsSync(targetIdHex, request.getTargetType(), "comment");
+            logger.info("内容评论统计自增: targetId={}, targetType={}, success={}", targetIdHex, request.getTargetType(), ok);
+        } catch (Exception e) {
+            logger.warn("创建评论后更新评论统计失败: targetId={}, targetType={}, err={}", request.getTargetId(), request.getTargetType(), e.getMessage());
+        }
+        
         logger.info("评论创建成功: {}", savedComment.getId());
         return convertToDTO(savedComment);
     }
@@ -185,11 +198,44 @@ public class CommentServiceImpl implements CommentService {
         if (!comment.getUserId().equals(userId)) {
             throw new BusinessException(ErrorCode.FORBIDDEN, "无权限删除此评论");
         }
-        
-        // 软删除
-        comment.setStatus(0);
-        comment.setUpdatedAt(LocalDateTime.now());
-        commentRepository.save(comment);
+
+        // 硬删除：删除当前评论与所有子评论
+        // 1) 记录目标统计信息所需字段
+        final String targetId = comment.getTargetId() != null ? comment.getTargetId().toHexString() : null;
+        final String targetType = comment.getTargetType();
+        final String parentId = comment.getParentId() != null ? comment.getParentId().toHexString() : null;
+
+        // 2) 先删除后代评论（path 以 当前评论path 为前缀）
+        String pathPrefix = comment.getPath();
+        long deletedChildren = 0L;
+        if (pathPrefix != null && !pathPrefix.isEmpty()) {
+            // 子孙节点路径形如：<当前path>.<索引>
+            String descendantsPrefix = pathPrefix + ".";
+            deletedChildren = commentRepository.deleteByPathStartingWith(descendantsPrefix);
+            logger.info("已删除子评论数量: {} (prefix={})", deletedChildren, descendantsPrefix);
+        }
+
+        // 3) 删除当前评论
+        commentRepository.deleteById(id);
+        long totalDeleted = deletedChildren + 1;
+        logger.info("硬删除完成，总计删除{}条评论(含自身)", totalDeleted);
+
+        // 4) 维护父评论的回复数（父评论可能不存在或已被删）
+        if (parentId != null) {
+            updateReplyCount(parentId, -1);
+        }
+
+        // 5) 更新内容统计中的评论计数（MySQL），精确按删除总数递减
+        try {
+            if (targetId != null && targetType != null) {
+                long decrement = -totalDeleted; // 负数递减
+                boolean ok = contentStatsService.incrementContentStats(targetId, targetType, "comment", decrement);
+                logger.info("内容评论统计精确递减: targetId={}, targetType={}, decrement={}, success={}",
+                        targetId, targetType, decrement, ok);
+            }
+        } catch (Exception ex) {
+            logger.warn("更新内容评论统计失败: targetId={}, targetType={}, err= {}", targetId, targetType, ex.getMessage());
+        }
     }
     
     @Override

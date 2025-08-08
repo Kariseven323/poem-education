@@ -180,6 +180,9 @@ export const creationAPI = {
   // 触发AI评分
   requestScore: (id) => api.post(`/creations/${id}/score`),
 
+  // 获取AI修改建议
+  requestSuggestions: (id) => api.post(`/creations/${id}/suggestions`),
+
   // 获取雷达图数据
   getRadarData: (id) => api.get(`/creations/${id}/radar`),
 

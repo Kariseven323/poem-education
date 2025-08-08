@@ -66,6 +66,12 @@ public class AIScoreServiceImpl implements AIScoreService {
     
     @Value("${ai.score.retry-interval}")
     private long retryInterval;
+
+    @Value("${ai.score.max-tokens:1000}")
+    private int scoreMaxTokens;
+
+    @Value("${ai.suggest.max-tokens:2048}")
+    private int suggestMaxTokens;
     
     private final Random random = new Random();
     
@@ -185,6 +191,70 @@ public class AIScoreServiceImpl implements AIScoreService {
             return false;
         }
     }
+
+    @Override
+    public String generateRevisionSuggestions(String title, String content, String style) {
+        // 若启用Mock，返回可读的模拟建议
+        if (mockEnabled) {
+            return "AI修改建议:\n" +
+                    "1. 调整节奏: 适当增减句内顿挫，增强韵脚呼应。\n" +
+                    "2. 意象统一: 选取更具连贯性的意象群，避免跳脱。\n" +
+                    "3. 情感递进: 在第二节增加情绪过渡语，提升层次感。\n" +
+                    "4. 技法优化: 尝试对仗或互文，增强语言张力。\n" +
+                    "5. 创新表达: 加入一处反转或新奇比喻，形成记忆点。";
+        }
+
+        String prompt = String.format(
+                "你是专业诗词编辑。\n" +
+                "请先在<think>中进行精简思考（不超过200字），然后输出最终建议正文。\n" +
+                "正文需分条列出、可执行，覆盖：节奏韵律、意象选择、情感铺陈、修辞技法、创新表达等维度。\n" +
+                "正文长度尽量充分（允许2000-4000字），不得包含<think>标签。\n\n" +
+                "标题：%s\n风格：%s\n内容：\n%s\n",
+                title != null ? title : "未命名",
+                style != null ? style : "未指定",
+                content != null ? content : ""
+        );
+
+        try {
+            // 直接调用现有模型接口，返回纯文本建议
+            Map<String, Object> requestBody = new HashMap<>();
+            requestBody.put("model", model);
+            requestBody.put("messages", new Object[]{
+                    Map.of("role", "system", "content", "你是一位严谨的诗词编辑，擅长给出具体可执行的修改建议。"),
+                    Map.of("role", "user", "content", prompt)
+            });
+            requestBody.put("temperature", 0.7);
+            requestBody.put("max_tokens", suggestMaxTokens);
+
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+            headers.setBearerAuth(apiKey);
+            HttpEntity<Map<String, Object>> request = new HttpEntity<>(requestBody, headers);
+
+            String url = apiUrl + "/v1/chat/completions";
+            ResponseEntity<String> response = restTemplate.postForEntity(url, request, String.class);
+            JsonNode root = objectMapper.readTree(response.getBody());
+            JsonNode choices = root.get("choices");
+            if (choices != null && choices.isArray() && choices.size() > 0) {
+                // 部分兼容 deepseek r1: 输出含<think>包裹的思考
+                return choices.get(0).get("message").get("content").asText();
+            }
+        } catch (Exception e) {
+            logger.warn("生成AI修改建议失败，返回默认建议", e);
+        }
+
+        return "AI修改建议暂不可用，请稍后再试。";
+    }
+
+    @Override
+    @Async
+    public CompletableFuture<String> generateRevisionSuggestionsAsync(String title, String content, String style) {
+        try {
+            return CompletableFuture.completedFuture(generateRevisionSuggestions(title, content, style));
+        } catch (Exception e) {
+            return CompletableFuture.completedFuture("AI修改建议暂不可用，请稍后再试。");
+        }
+    }
     
     /**
      * 带重试机制的AI模型调用
@@ -219,7 +289,7 @@ public class AIScoreServiceImpl implements AIScoreService {
         requestBody.put("model", model);
         requestBody.put("messages", createMessages(title, content, style));
         requestBody.put("temperature", 0.7);
-        requestBody.put("max_tokens", 1000);
+        requestBody.put("max_tokens", scoreMaxTokens);
         
         // 设置请求头
         HttpHeaders headers = new HttpHeaders();

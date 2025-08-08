@@ -9,7 +9,7 @@ import {
   MessageOutlined,
   LoginOutlined,
   LogoutOutlined,
-  SettingOutlined,
+  
 } from '@ant-design/icons';
 import Login from './components/Login';
 import Register from './components/Register';
@@ -20,10 +20,11 @@ import WriterList from './components/WriterList';
 import WriterDetail from './components/WriterDetail';
 import SentenceList from './components/SentenceList';
 import UserProfile from './components/UserProfile';
-import APITest from './components/APITest';
+// Removed APITest from navigation and routes
 import PoemCreation from './components/PoemCreation';
 import CreationDetail from './components/CreationDetail';
 import PoemCommunity from './components/PoemCommunity';
+import CreationEdit from './components/CreationEdit';
 import { userAPI } from './utils/api';
 
 const { Header, Content, Sider } = Layout;
@@ -80,44 +81,25 @@ function AppContent() {
     message.success('已退出登录');
   };
 
-  const menuItems = [
-    {
-      key: '/',
-      icon: <HomeOutlined />,
-      label: '首页',
-    },
-    {
-      key: '/poems',
-      icon: <BookOutlined />,
-      label: '诗词鉴赏',
-    },
-    {
-      key: '/writers',
-      icon: <UserOutlined />,
-      label: '文人墨客',
-    },
-    {
-      key: '/sentences',
-      icon: <EditOutlined />,
-      label: '名句摘录',
-    },
-    {
-      key: '/creations',
-      icon: <MessageOutlined />,
-      label: '诗词创作',
-    },
-    {
-      key: '/community',
-      icon: <EditOutlined />,
-      label: '诗词社区',
-    },
-    {
-      key: '/api-test',
-      icon: <SettingOutlined />,
-      label: 'API测试',
-    },
-
-  ];
+  // 构建侧边导航项（移除 API 测试，将用户个人选项移入侧边栏）
+  const buildMenuItems = () => {
+    const base = [
+      { key: '/', icon: <HomeOutlined />, label: '首页' },
+      { key: '/poems', icon: <BookOutlined />, label: '诗词鉴赏' },
+      { key: '/writers', icon: <UserOutlined />, label: '文人墨客' },
+      { key: '/sentences', icon: <EditOutlined />, label: '名句摘录' },
+      { key: '/creations', icon: <MessageOutlined />, label: '诗词创作' },
+      { key: '/community', icon: <EditOutlined />, label: '诗词社区' },
+    ];
+    if (user) {
+      base.push({ key: '/profile', icon: <UserOutlined />, label: '个人资料' });
+      base.push({ key: 'logout', icon: <LogoutOutlined />, label: '退出登录' });
+    } else {
+      base.push({ key: '/login', icon: <LoginOutlined />, label: '登录' });
+      base.push({ key: '/register', label: '注册' });
+    }
+    return base;
+  };
 
   const handleUserMenuClick = ({ key }) => {
     if (key === 'profile') {
@@ -153,9 +135,14 @@ function AppContent() {
             theme="dark"
             selectedKeys={[location.pathname]}
             mode="inline"
-            items={menuItems}
+            items={buildMenuItems()}
             onClick={({ key }) => {
-              navigate(key);
+              if (key === 'logout') {
+                handleLogout();
+                navigate('/');
+              } else {
+                navigate(key);
+              }
             }}
           />
         </Sider>
@@ -164,25 +151,7 @@ function AppContent() {
           <Header style={{ padding: '0 16px', background: '#fff', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <h2 style={{ margin: 0 }}>诗词交流鉴赏平台</h2>
             
-            <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-              {user ? (
-                <Dropdown menu={{ items: userMenuItems, onClick: handleUserMenuClick }} placement="bottomRight">
-                  <div style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}>
-                    <Avatar icon={<UserOutlined />} />
-                    <span style={{ marginLeft: 8 }}>{user.nickname || user.username}</span>
-                  </div>
-                </Dropdown>
-              ) : (
-                <div>
-                  <Button type="link" icon={<LoginOutlined />} onClick={() => navigate('/login')}>
-                    登录
-                  </Button>
-                  <Button type="primary" onClick={() => navigate('/register')}>
-                    注册
-                  </Button>
-                </div>
-              )}
-            </div>
+            <div />
           </Header>
           
           <Content style={{ margin: '16px' }}>
@@ -198,9 +167,10 @@ function AppContent() {
                 <Route path="/sentences" element={<SentenceList />} />
                 <Route path="/creations" element={user ? <PoemCreation /> : <Navigate to="/login" />} />
                 <Route path="/creations/:id" element={<CreationDetail />} />
+                <Route path="/creations/:id/edit" element={<CreationEdit />} />
                 <Route path="/community" element={<PoemCommunity />} />
                 <Route path="/profile" element={user ? <UserProfile user={user} /> : <Navigate to="/login" />} />
-                <Route path="/api-test" element={<APITest />} />
+                {/* 已移除 API 测试路由 */}
 
               </Routes>
             </div>

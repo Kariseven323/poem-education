@@ -222,6 +222,20 @@ public class CreationController {
         
         return Result.success(radarData, "获取雷达图数据成功");
     }
+
+    /**
+     * 获取AI修改建议（仅作者）
+     * POST /api/v1/creations/{id}/suggestions
+     */
+    @PostMapping("/{id}/suggestions")
+    public Result<String> requestRevisionSuggestions(@PathVariable String id,
+                                                     HttpServletRequest httpRequest) {
+        Long userId = getCurrentUserId(httpRequest);
+        logger.info("用户{}请求AI修改建议，创作ID：{}", userId, id);
+
+        String suggestions = creationService.getRevisionSuggestions(userId, id);
+        return Result.success(suggestions, "AI修改建议生成成功");
+    }
     
     /**
      * 切换创作公开状态

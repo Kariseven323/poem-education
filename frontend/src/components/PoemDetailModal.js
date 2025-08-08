@@ -26,13 +26,15 @@ import {
   SendOutlined,
   CloseOutlined,
   StarOutlined,
-  LikeOutlined
+    LikeOutlined,
+    BulbOutlined
 } from '@ant-design/icons';
 import { guwenAPI, commentAPI, userActionAPI, statsAPI, creationAPI } from '../utils/api';
 import { normalizeType } from '../utils/dataUtils';
 import viewTracker from '../utils/viewTracker';
 import moment from 'moment';
 import './PoemDetailModal.css';
+  import RadarChart from './RadarChart';
 
 const { Title, Paragraph, Text } = Typography;
 const { TextArea } = Input;
@@ -61,6 +63,13 @@ const PoemDetailModal = ({ visible, onClose, poemId, poemType = 'guwen' }) => {
   // 实时统计数据状态
   const [realTimeStats, setRealTimeStats] = useState(null);
   const [statsLoading, setStatsLoading] = useState(false);
+
+  // 区分是否为用户创作详情
+  const isCreation = poemType === 'creation';
+
+  // 创作雷达图相关状态（仅创作）
+  const [radarData, setRadarData] = useState(null);
+  const [radarLoading, setRadarLoading] = useState(false);
 
   // 回复相关状态
   const [replyingTo, setReplyingTo] = useState(null); // 当前回复的评论
@@ -121,6 +130,15 @@ const PoemDetailModal = ({ visible, onClose, poemId, poemType = 'guwen' }) => {
       const timeB = new Date(b.createdAt);
       return timeA - timeB;
     });
+  };
+
+  // 计算总评论数量（包含回复）
+  const getFlattenedCommentCount = () => {
+    try {
+      return flattenComments(comments).length;
+    } catch (e) {
+      return comments?.length || 0;
+    }
   };
 
   // 根据parentId查找被回复评论信息
@@ -344,6 +362,26 @@ const PoemDetailModal = ({ visible, onClose, poemId, poemType = 'guwen' }) => {
 
     // {{END_MODIFICATIONS}}
 
+    const canDelete = currentUser && (currentUser.id === comment.userId);
+
+    const handleDeleteComment = async () => {
+      if (!canDelete) return;
+      try {
+        const confirmDelete = window.confirm('确认删除该评论？此操作不可恢复');
+        if (!confirmDelete) return;
+        // 使用后端DELETE /comments/{id}
+        const id = getCommentId(comment);
+        const resp = await commentAPI.delete(id);
+        if (resp.code === 200) {
+          message.success('删除成功');
+          loadComments();
+        }
+      } catch (e) {
+        console.error('删除评论失败:', e);
+        message.error('删除失败');
+      }
+    };
+
     return (
       <Card
         key={commentId}
@@ -450,6 +488,21 @@ const PoemDetailModal = ({ visible, onClose, poemId, poemType = 'guwen' }) => {
                 >
                   回复
                 </Button>
+                {canDelete && (
+                  <Button
+                    type="text"
+                    size="small"
+                    danger
+                    style={{
+                      fontSize: isMobile ? '11px' : '12px',
+                      padding: isMobile ? '2px 6px' : '4px 8px',
+                      height: isMobile ? '28px' : '32px'
+                    }}
+                    onClick={handleDeleteComment}
+                  >
+                    删除
+                  </Button>
+                )}
               </Space>
             </div>
 
@@ -471,10 +524,10 @@ const PoemDetailModal = ({ visible, onClose, poemId, poemType = 'guwen' }) => {
                     onChange={(e) => setReplyContent(e.target.value)}
                     placeholder="写下你的回复..."
                     style={{
-                      fontSize: isMobile ? '13px' : '14px'
+                      fontSize: isMobile ? '13px' : '14px',
+                      marginBottom: '8px'
                     }}
                     autoSize={{ minRows: 2, maxRows: 4 }}
-                    style={{ marginBottom: '8px' }}
                   />
                   <div className="reply-actions" style={{ textAlign: 'right' }}>
                     <Space>
@@ -663,11 +716,22 @@ const PoemDetailModal = ({ visible, onClose, poemId, poemType = 'guwen' }) => {
         setPoem(response.data);
         setLikeCount(response.data.stats?.likeCount || response.data.likeCount || 0);
 
-        // 记录诗词访问
-        viewTracker.recordPoemView(poemId);
+        // 记录访问（根据类型）
+        if (isCreation) {
+          viewTracker.recordCreationView(poemId, { silent: true });
+        } else {
+          viewTracker.recordPoemView(poemId, { silent: true });
+        }
 
         // 异步获取实时统计数据
         loadRealTimeStats();
+
+        // 若为创作且存在AI评分，同步加载雷达图数据
+        if (poemType === 'creation' && response.data?.aiScore) {
+          loadRadarData();
+        } else {
+          setRadarData(null);
+        }
 
         // 检查用户是否已点赞
         if (currentUser) {
@@ -704,6 +768,22 @@ const PoemDetailModal = ({ visible, onClose, poemId, poemType = 'guwen' }) => {
       console.error('获取实时统计数据失败:', error);
     } finally {
       setStatsLoading(false);
+    }
+  };
+
+  // 加载创作雷达图数据（仅创作）
+  const loadRadarData = async () => {
+    if (!poemId) return;
+    setRadarLoading(true);
+    try {
+      const response = await creationAPI.getRadarData(poemId);
+      if (response.code === 200) {
+        setRadarData(response.data);
+      }
+    } catch (e) {
+      console.error('获取雷达图数据失败:', e);
+    } finally {
+      setRadarLoading(false);
     }
   };
 
@@ -823,11 +903,12 @@ const PoemDetailModal = ({ visible, onClose, poemId, poemType = 'guwen' }) => {
 
     setLikingPoem(true);
     try {
+      const targetType = isCreation ? 'creation' : 'guwen';
       if (isLiked) {
         // 取消点赞
         const response = await userActionAPI.cancelAction({
           targetId: poemId,
-          targetType: 'guwen',
+          targetType,
           actionType: 'like'
         });
         if (response.code === 200) {
@@ -841,7 +922,7 @@ const PoemDetailModal = ({ visible, onClose, poemId, poemType = 'guwen' }) => {
         // 点赞
         const response = await userActionAPI.recordAction({
           targetId: poemId,
-          targetType: 'guwen',
+          targetType,
           actionType: 'like'
         });
         if (response.code === 200) {
@@ -907,6 +988,7 @@ const PoemDetailModal = ({ visible, onClose, poemId, poemType = 'guwen' }) => {
         setReplyingTo(null);
         setReplyVisible({});
         loadComments(); // 重新加载评论列表
+        loadRealTimeStats(); // 刷新统计
       }
     } catch (error) {
       console.error('Failed to submit comment:', error);
@@ -959,7 +1041,7 @@ const PoemDetailModal = ({ visible, onClose, poemId, poemType = 'guwen' }) => {
 
       const response = await commentAPI.create({
         targetId: poemId,
-        targetType: 'guwen',
+        targetType: isCreation ? 'creation' : 'guwen',
         content: replyContent.trim(),
         parentId: parentId
       });
@@ -970,6 +1052,7 @@ const PoemDetailModal = ({ visible, onClose, poemId, poemType = 'guwen' }) => {
         const commentId = getCommentId(comment);
         setReplyVisible({ ...replyVisible, [commentId]: false });
         loadComments(); // 重新加载评论列表
+        loadRealTimeStats(); // 刷新统计
       }
     } catch (error) {
       console.error('Failed to submit reply:', error);
@@ -1029,13 +1112,29 @@ const PoemDetailModal = ({ visible, onClose, poemId, poemType = 'guwen' }) => {
                     <Title level={2} style={{ marginBottom: 8, color: '#1890ff' }}>
                       {poem.title}
                     </Title>
-                    <Space>
-                      <Tag color="blue" icon={<BookOutlined />}>{poem.dynasty}</Tag>
-                      <Tag color="green" icon={<UserOutlined />}>{poem.writer}</Tag>
-                      {normalizeType(poem.type).map(t => (
-                        <Tag key={t} color="orange">{t}</Tag>
-                      ))}
-                    </Space>
+                    {isCreation ? (
+                      <Space wrap>
+                        {poem.style && (
+                          <Tag color="blue">{poem.style}</Tag>
+                        )}
+                        <Tag color="green" icon={<UserOutlined />}>
+                          {poem.authorUsername ? `作者：${poem.authorUsername}` : (poem.authorId ? `作者ID：${poem.authorId}` : '作者：未知')}
+                        </Tag>
+                        {typeof poem.status !== 'undefined' && (
+                          <Tag color={poem.status === 1 ? 'green' : (poem.status === 0 ? 'orange' : 'red')}>
+                            {poem.status === 1 ? '已发布' : (poem.status === 0 ? '待审核' : '审核不通过')}
+                          </Tag>
+                        )}
+                      </Space>
+                    ) : (
+                      <Space>
+                        <Tag color="blue" icon={<BookOutlined />}>{poem.dynasty}</Tag>
+                        <Tag color="green" icon={<UserOutlined />}>{poem.writer}</Tag>
+                        {normalizeType(poem.type).map(t => (
+                          <Tag key={t} color="orange">{t}</Tag>
+                        ))}
+                      </Space>
+                    )}
                   </div>
 
                   {/* 诗词内容 */}
@@ -1058,42 +1157,83 @@ const PoemDetailModal = ({ visible, onClose, poemId, poemType = 'guwen' }) => {
                       {poem.content}
                     </div>
                   </div>
+
+                  {/* 创作专属：AI评分雷达图 */}
+                  {isCreation && poem.aiScore && (
+                    <div style={{ marginBottom: 24 }}>
+                      <RadarChart
+                        data={radarData}
+                        loading={radarLoading}
+                        height="420px"
+                        showTitle={true}
+                        showCard={true}
+                      />
+                    </div>
+                  )}
                   {/* 基本信息 */}
                   <div style={{ marginBottom: 24 }}>
                     <Title level={4}>基本信息</Title>
                     <div style={{ background: '#f8f9fa', padding: '16px', borderRadius: '8px' }}>
                       <Row gutter={[16, 8]}>
-                        <Col span={12}>
-                          <Text strong>朝代：</Text>
-                          <Text>{poem.dynasty || '未知'}</Text>
-                        </Col>
-                        <Col span={12}>
-                          <Text strong>作者：</Text>
-                          <Text>{poem.writer || '未知'}</Text>
-                        </Col>
-                        {poem.type && poem.type.length > 0 && (
-                          <Col span={24}>
-                            <Text strong>类型：</Text>
-                            <div style={{ marginTop: 4 }}>
-                              {normalizeType(poem.type).map(t => (
-                                <Tag key={t} color="blue" style={{ marginBottom: 4 }}>
-                                  {t}
-                                </Tag>
-                              ))}
-                            </div>
-                          </Col>
+                        {isCreation ? (
+                          <>
+                            <Col span={12}>
+                              <Text strong>风格：</Text>
+                              <Text>{poem.style || '未分类'}</Text>
+                            </Col>
+                            <Col span={12}>
+                              <Text strong>作者：</Text>
+                              <Text>{poem.authorUsername || (poem.authorId ? `ID ${poem.authorId}` : '未知')}</Text>
+                            </Col>
+                            {typeof poem.status !== 'undefined' && (
+                              <Col span={12}>
+                                <Text strong>状态：</Text>
+                                <Text>{poem.status === 1 ? '已发布' : (poem.status === 0 ? '待审核' : '审核不通过')}</Text>
+                              </Col>
+                            )}
+                            {poem.aiScore?.totalScore != null && (
+                              <Col span={12}>
+                                <Text strong>AI评分：</Text>
+                                <Text>{poem.aiScore.totalScore}</Text>
+                              </Col>
+                            )}
+                          </>
+                        ) : (
+                          <>
+                            <Col span={12}>
+                              <Text strong>朝代：</Text>
+                              <Text>{poem.dynasty || '未知'}</Text>
+                            </Col>
+                            <Col span={12}>
+                              <Text strong>作者：</Text>
+                              <Text>{poem.writer || '未知'}</Text>
+                            </Col>
+                            {poem.type && poem.type.length > 0 && (
+                              <Col span={24}>
+                                <Text strong>类型：</Text>
+                                <div style={{ marginTop: 4 }}>
+                                  {normalizeType(poem.type).map(t => (
+                                    <Tag key={t} color="blue" style={{ marginBottom: 4 }}>
+                                      {t}
+                                    </Tag>
+                                  ))}
+                                </div>
+                              </Col>
+                            )}
+                            {poem.audioUrl && (
+                              <Col span={24}>
+                                <Text strong>音频：</Text>
+                                <div style={{ marginTop: 8 }}>
+                                  <audio controls style={{ width: '100%' }}>
+                                    <source src={poem.audioUrl} type="audio/mpeg" />
+                                    您的浏览器不支持音频播放。
+                                  </audio>
+                                </div>
+                              </Col>
+                            )}
+                          </>
                         )}
-                        {poem.audioUrl && (
-                          <Col span={24}>
-                            <Text strong>音频：</Text>
-                            <div style={{ marginTop: 8 }}>
-                              <audio controls style={{ width: '100%' }}>
-                                <source src={poem.audioUrl} type="audio/mpeg" />
-                                您的浏览器不支持音频播放。
-                              </audio>
-                            </div>
-                          </Col>
-                        )}
+
                         {/* 统计信息 */}
                         <Col span={24}>
                           <Text strong>统计信息：</Text>
@@ -1139,8 +1279,8 @@ const PoemDetailModal = ({ visible, onClose, poemId, poemType = 'guwen' }) => {
                     </div>
                   </div>
 
-                  {/* 注释 */}
-                  {poem.remark && (
+                  {/* 注释（仅古诗文） */}
+                  {!isCreation && poem.remark && (
                     <div style={{ marginBottom: 24 }}>
                       <Title level={4}>
                         <BookOutlined style={{ marginRight: 8, color: '#1890ff' }} />
@@ -1164,8 +1304,8 @@ const PoemDetailModal = ({ visible, onClose, poemId, poemType = 'guwen' }) => {
                     </div>
                   )}
 
-                  {/* 翻译 */}
-                  {poem.translation && (
+                  {/* 翻译（仅古诗文） */}
+                  {!isCreation && poem.translation && (
                     <div style={{ marginBottom: 24 }}>
                       <Title level={4}>
                         <MessageOutlined style={{ marginRight: 8, color: '#52c41a' }} />
@@ -1189,8 +1329,8 @@ const PoemDetailModal = ({ visible, onClose, poemId, poemType = 'guwen' }) => {
                     </div>
                   )}
 
-                  {/* 赏析 */}
-                  {poem.shangxi && (
+                  {/* 赏析（仅古诗文） */}
+                  {!isCreation && poem.shangxi && (
                     <div style={{ marginBottom: 24 }}>
                       <Title level={4}>
                         <StarOutlined style={{ marginRight: 8, color: '#722ed1' }} />
@@ -1213,6 +1353,53 @@ const PoemDetailModal = ({ visible, onClose, poemId, poemType = 'guwen' }) => {
                       </div>
                     </div>
                   )}
+
+                  {/* 创作专属：AI评分详情与AI思考过程 */}
+                  {isCreation && poem.aiScore && (
+                    <div style={{ marginBottom: 24 }}>
+                      <Title level={4}>AI评分详情</Title>
+                      <div style={{ background: '#ffffff', border: '1px solid #f0f0f0', borderRadius: 8, padding: 16 }}>
+                        <Row gutter={[16, 8]}>
+                          <Col span={12}>
+                            <Text strong>总分：</Text>
+                            <Text style={{ color: '#1890ff', fontWeight: 600 }}>{poem.aiScore.totalScore ?? 0} 分</Text>
+                          </Col>
+                          {poem.aiScore?.dimensions && (
+                            <>
+                              <Col span={12}><Text strong>韵律：</Text><Text>{poem.aiScore.dimensions.rhythm}</Text></Col>
+                              <Col span={12}><Text strong>意象：</Text><Text>{poem.aiScore.dimensions.imagery}</Text></Col>
+                              <Col span={12}><Text strong>情感：</Text><Text>{poem.aiScore.dimensions.emotion}</Text></Col>
+                              <Col span={12}><Text strong>技法：</Text><Text>{poem.aiScore.dimensions.technique}</Text></Col>
+                              <Col span={12}><Text strong>创新：</Text><Text>{poem.aiScore.dimensions.innovation}</Text></Col>
+                            </>
+                          )}
+                          {poem.aiScore?.feedback && (
+                            <Col span={24}>
+                              <div style={{ marginTop: 8 }}>
+                                <Text strong>AI点评：</Text>
+                                <Paragraph style={{ margin: '8px 0 0', whiteSpace: 'pre-wrap' }}>
+                                  {poem.aiScore.feedback}
+                                </Paragraph>
+                              </div>
+                            </Col>
+                          )}
+                        </Row>
+                        {poem.aiScore?.thinkingProcess && (
+                          <div style={{ marginTop: 16 }}>
+                            <div style={{ display: 'flex', alignItems: 'center', marginBottom: 8 }}>
+                              <BulbOutlined style={{ color: '#faad14', marginRight: 8 }} />
+                              <Text strong>AI思考过程</Text>
+                            </div>
+                            <div style={{ background: '#fafafa', padding: 12, borderRadius: 6, fontSize: 12, lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>
+                              {poem.aiScore.thinkingProcess}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* 注：AI修改建议已迁移到个人创作详情页（CreationDetail）展示 */}
                 </div>
               </Card>
             </div>
@@ -1228,9 +1415,16 @@ const PoemDetailModal = ({ visible, onClose, poemId, poemType = 'guwen' }) => {
                       <MessageOutlined style={{ color: '#1890ff', fontSize: '16px' }} />
                       <span style={{ fontSize: '16px', fontWeight: 600 }}>评论区</span>
                       <div className="comment-count">
-                        <Text type="secondary" style={{ fontSize: '14px' }}>
-                          {comments.length > 0 ? `${comments.length} 条评论` : '暂无评论'}
-                        </Text>
+                        {(() => {
+                          const displayCount = (realTimeStats && typeof realTimeStats.commentCount === 'number')
+                            ? realTimeStats.commentCount
+                            : getFlattenedCommentCount();
+                          return (
+                            <Text type="secondary" style={{ fontSize: '14px' }}>
+                              {displayCount > 0 ? `${displayCount} 条评论` : '暂无评论'}
+                            </Text>
+                          );
+                        })()}
                       </div>
                     </Space>
                   </div>
