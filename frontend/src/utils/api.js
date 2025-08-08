@@ -83,6 +83,9 @@ export const guwenAPI = {
 
   // 获取所有作者列表
   getWriters: () => api.get('/guwen/writers'),
+
+  // 获取古文统计信息
+  getStats: () => api.get('/guwen/stats'),
 };
 
 // 作者相关API
@@ -101,6 +104,9 @@ export const writerAPI = {
 
   // 获取作者作品列表（根据作者名称）
   getWorksByName: (writerName, params) => api.get(`/guwen/by-writer/${encodeURIComponent(writerName)}`, { params }),
+
+  // 获取作者统计信息
+  getStats: () => api.get('/writers/stats'),
 };
 
 // 名句相关API
@@ -128,6 +134,9 @@ export const sentenceAPI = {
 
   // 获取所有出处列表
   getSources: () => api.get('/sentences/sources'),
+
+  // 获取名句统计信息
+  getStats: () => api.get('/sentences/stats'),
 };
 
 // 评论相关API
@@ -223,6 +232,38 @@ export const userActionAPI = {
 
   // 获取热门内容
   getHotContent: (params) => api.get('/actions/hot', { params }),
+};
+
+// 全局统计相关API
+export const statsAPI = {
+  // 获取全局统计信息
+  getGlobalStats: () => api.get('/stats/global'),
+
+  // 获取内容统计信息
+  getContentStats: (contentId, contentType) => {
+    // 参数验证
+    if (!contentId || !contentType) {
+      return Promise.reject(new Error('contentId and contentType are required'));
+    }
+
+    // 验证contentId格式（MongoDB ObjectId应该是24个字符）
+    if (typeof contentId !== 'string' || contentId.length !== 24) {
+      return Promise.reject(new Error('contentId should be a 24-character MongoDB ObjectId'));
+    }
+
+    // 验证contentType
+    const validTypes = ['guwen', 'sentence', 'writer', 'creation'];
+    if (!validTypes.includes(contentType)) {
+      return Promise.reject(new Error('contentType should be one of: ' + validTypes.join(', ')));
+    }
+
+    return api.get('/stats/content', {
+      params: {
+        contentId,
+        contentType
+      }
+    });
+  },
 };
 
 export default api;

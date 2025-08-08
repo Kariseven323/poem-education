@@ -9,7 +9,8 @@ import {
   StarOutlined,
   RightOutlined
 } from '@ant-design/icons';
-import { guwenAPI, writerAPI, sentenceAPI } from '../utils/api';
+import { guwenAPI, writerAPI, sentenceAPI, statsAPI } from '../utils/api';
+import viewTracker from '../utils/viewTracker';
 
 const { Title, Paragraph, Text } = Typography;
 
@@ -18,25 +19,45 @@ const Home = () => {
   const [hotSentences, setHotSentences] = useState([]);
   const [featuredWriters, setFeaturedWriters] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [globalStats, setGlobalStats] = useState({
+    poemCount: 0,
+    writerCount: 0,
+    sentenceCount: 0,
+    todayViews: 0,
+    poemCountDisplay: '0',
+    writerCountDisplay: '0',
+    sentenceCountDisplay: '0',
+    todayViewsDisplay: '0'
+  });
 
   useEffect(() => {
     loadHomeData();
+    // 记录首页访问
+    viewTracker.recordHomeView();
   }, []);
 
   const loadHomeData = async () => {
     try {
       setLoading(true);
 
-      // 并行加载数据 - 使用随机名句API
-      const [poemsRes, sentencesRes] = await Promise.allSettled([
+      // 并行加载数据 - 包括统计数据、诗词列表和随机名句
+      const [statsRes, poemsRes, sentencesRes] = await Promise.allSettled([
+        statsAPI.getGlobalStats(),
         guwenAPI.getList({ page: 1, size: 6 }),
         sentenceAPI.getRandom({ limit: 6 })
       ]);
 
+      // 处理统计数据
+      if (statsRes.status === 'fulfilled' && statsRes.value.code === 200) {
+        setGlobalStats(statsRes.value.data);
+      }
+
+      // 处理诗词列表
       if (poemsRes.status === 'fulfilled' && poemsRes.value.code === 200) {
         setHotPoems(poemsRes.value.data?.list || []);
       }
 
+      // 处理随机名句
       if (sentencesRes.status === 'fulfilled' && sentencesRes.value.code === 200) {
         // 随机名句API返回的是数组，不是分页对象
         setHotSentences(sentencesRes.value.data || []);
@@ -90,35 +111,35 @@ const Home = () => {
       {/* 统计数据 */}
       <Row gutter={16} style={{ marginBottom: 24 }}>
         <Col span={6}>
-          <StatCard 
-            title="诗词总数" 
-            value="10,000+" 
-            icon={<BookOutlined />} 
-            color="#1890ff" 
+          <StatCard
+            title="诗词总数"
+            value={globalStats.poemCountDisplay}
+            icon={<BookOutlined />}
+            color="#1890ff"
           />
         </Col>
         <Col span={6}>
-          <StatCard 
-            title="文人墨客" 
-            value="500+" 
-            icon={<UserOutlined />} 
-            color="#52c41a" 
+          <StatCard
+            title="文人墨客"
+            value={globalStats.writerCountDisplay}
+            icon={<UserOutlined />}
+            color="#52c41a"
           />
         </Col>
         <Col span={6}>
-          <StatCard 
-            title="名句摘录" 
-            value="5,000+" 
-            icon={<EditOutlined />} 
-            color="#faad14" 
+          <StatCard
+            title="名句摘录"
+            value={globalStats.sentenceCountDisplay}
+            icon={<EditOutlined />}
+            color="#faad14"
           />
         </Col>
         <Col span={6}>
-          <StatCard 
-            title="今日访问" 
-            value="1,234" 
-            icon={<EyeOutlined />} 
-            color="#f5222d" 
+          <StatCard
+            title="今日访问"
+            value={globalStats.todayViewsDisplay}
+            icon={<EyeOutlined />}
+            color="#f5222d"
           />
         </Col>
       </Row>

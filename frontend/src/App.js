@@ -119,6 +119,12 @@ function AppContent() {
 
   ];
 
+  const handleUserMenuClick = ({ key }) => {
+    if (key === 'profile') {
+      navigate('/profile');
+    }
+  };
+
   const userMenuItems = [
     {
       key: 'profile',
@@ -160,7 +166,7 @@ function AppContent() {
             
             <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
               {user ? (
-                <Dropdown menu={{ items: userMenuItems }} placement="bottomRight">
+                <Dropdown menu={{ items: userMenuItems, onClick: handleUserMenuClick }} placement="bottomRight">
                   <div style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}>
                     <Avatar icon={<UserOutlined />} />
                     <span style={{ marginLeft: 8 }}>{user.nickname || user.username}</span>

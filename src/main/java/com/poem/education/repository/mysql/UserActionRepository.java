@@ -200,7 +200,7 @@ public interface UserActionRepository extends JpaRepository<UserAction, Long> {
     
     /**
      * 统计用户在指定时间范围内的行为数量
-     * 
+     *
      * @param userId 用户ID
      * @param actionType 行为类型
      * @param startTime 开始时间
@@ -209,5 +209,14 @@ public interface UserActionRepository extends JpaRepository<UserAction, Long> {
      */
     long countByUserIdAndActionTypeAndCreatedAtBetween(
             Long userId, String actionType, LocalDateTime startTime, LocalDateTime endTime);
+
+    /**
+     * 统计指定时间之后的特定行为类型数量
+     *
+     * @param actionType 行为类型
+     * @param startTime 开始时间
+     * @return 行为数量
+     */
+    long countByActionTypeAndCreatedAtAfter(String actionType, LocalDateTime startTime);
 }
 // {{END_MODIFICATIONS}}

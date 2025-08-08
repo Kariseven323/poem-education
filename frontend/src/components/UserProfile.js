@@ -1,15 +1,79 @@
-import React, { useState } from 'react';
-import { Card, Form, Input, Button, Avatar, Typography, Space, message, Divider } from 'antd';
-import { UserOutlined, EditOutlined, SaveOutlined } from '@ant-design/icons';
-import { userAPI } from '../utils/api';
+import React, { useState, useEffect } from 'react';
+import {
+  Card,
+  Form,
+  Input,
+  Button,
+  Avatar,
+  Typography,
+  Space,
+  message,
+  Divider,
+  List,
+  Tag,
+  Empty,
+  Spin,
+  Row,
+  Col,
+  Pagination
+} from 'antd';
+import {
+  UserOutlined,
+  EditOutlined,
+  SaveOutlined,
+  BookOutlined,
+  EyeOutlined,
+  CalendarOutlined,
+  TagOutlined,
+  ThunderboltOutlined
+} from '@ant-design/icons';
+import { userAPI, creationAPI } from '../utils/api';
+import { useNavigate } from 'react-router-dom';
+import moment from 'moment';
 
 const { Title, Text } = Typography;
 const { TextArea } = Input;
 
 const UserProfile = ({ user }) => {
+  const navigate = useNavigate();
   const [editing, setEditing] = useState(false);
   const [loading, setLoading] = useState(false);
   const [form] = Form.useForm();
+
+  // 用户创作相关状态
+  const [myCreations, setMyCreations] = useState([]);
+  const [creationsLoading, setCreationsLoading] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize] = useState(6);
+  const [total, setTotal] = useState(0);
+
+  // 加载用户创作列表
+  const loadMyCreations = async (page = 1) => {
+    setCreationsLoading(true);
+    try {
+      const response = await creationAPI.getMyList({
+        page: page,
+        pageSize: pageSize
+      });
+      if (response.code === 200) {
+        setMyCreations(response.data.list || []);
+        setTotal(response.data.total || 0);
+        setCurrentPage(page);
+      } else {
+        message.error(response.message || '获取创作列表失败');
+      }
+    } catch (error) {
+      console.error('Failed to load my creations:', error);
+      message.error('获取创作列表失败，请稍后重试');
+    } finally {
+      setCreationsLoading(false);
+    }
+  };
+
+  // 组件挂载时加载创作列表
+  useEffect(() => {
+    loadMyCreations();
+  }, []);
 
   const handleEdit = () => {
     setEditing(true);
@@ -194,24 +258,163 @@ const UserProfile = ({ user }) => {
         </div>
       </Card>
 
-      {/* 其他功能区域 */}
-      <Card title="我的活动" style={{ marginTop: 16 }}>
-        <div style={{ 
-          textAlign: 'center', 
-          color: '#999', 
-          padding: '40px',
-          background: '#fafafa',
-          borderRadius: '8px'
-        }}>
-          <UserOutlined style={{ fontSize: '48px', marginBottom: 16 }} />
-          <div>活动记录功能开发中...</div>
-        </div>
+      {/* 我的创作 */}
+      <Card
+        title={
+          <Space>
+            <BookOutlined />
+            我的创作
+            <Tag color="blue">{total}</Tag>
+          </Space>
+        }
+        style={{ marginTop: 16 }}
+        extra={
+          <Button
+            type="primary"
+            icon={<EditOutlined />}
+            onClick={() => navigate('/creations')}
+          >
+            创作新诗词
+          </Button>
+        }
+      >
+        <Spin spinning={creationsLoading}>
+          {myCreations.length > 0 ? (
+            <>
+              <List
+                grid={{
+                  gutter: 16,
+                  xs: 1,
+                  sm: 2,
+                  md: 2,
+                  lg: 3,
+                  xl: 3,
+                  xxl: 3,
+                }}
+                dataSource={myCreations}
+                renderItem={(creation) => (
+                  <List.Item>
+                    <Card
+                      size="small"
+                      hoverable
+                      onClick={() => navigate(`/creations/${creation.id}`)}
+                      style={{ height: '100%' }}
+                      bodyStyle={{ padding: '16px' }}
+                    >
+                      <div style={{ marginBottom: 12 }}>
+                        <Typography.Title
+                          level={5}
+                          style={{
+                            margin: 0,
+                            fontSize: '16px',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap'
+                          }}
+                        >
+                          {creation.title}
+                        </Typography.Title>
+                      </div>
+
+                      <div style={{ marginBottom: 12 }}>
+                        <Typography.Paragraph
+                          style={{
+                            margin: 0,
+                            fontSize: '14px',
+                            color: '#666',
+                            height: '60px',
+                            overflow: 'hidden',
+                            display: '-webkit-box',
+                            WebkitLineClamp: 3,
+                            WebkitBoxOrient: 'vertical'
+                          }}
+                        >
+                          {creation.content}
+                        </Typography.Paragraph>
+                      </div>
+
+                      <div style={{ marginBottom: 8 }}>
+                        <Space wrap size="small">
+                          {creation.style && (
+                            <Tag color="blue" size="small">
+                              <TagOutlined style={{ fontSize: '10px' }} />
+                              {creation.style}
+                            </Tag>
+                          )}
+                          {creation.aiScore && creation.aiScore.totalScore && (
+                            <Tag color="orange" size="small">
+                              <ThunderboltOutlined style={{ fontSize: '10px' }} />
+                              {creation.aiScore.totalScore}分
+                            </Tag>
+                          )}
+                          {creation.isPublic && (
+                            <Tag color="green" size="small">
+                              <EyeOutlined style={{ fontSize: '10px' }} />
+                              公开
+                            </Tag>
+                          )}
+                        </Space>
+                      </div>
+
+                      <div style={{
+                        fontSize: '12px',
+                        color: '#999',
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center'
+                      }}>
+                        <span>
+                          <CalendarOutlined style={{ marginRight: 4 }} />
+                          {moment(creation.createdAt).format('MM-DD')}
+                        </span>
+                        <span>点击查看详情</span>
+                      </div>
+                    </Card>
+                  </List.Item>
+                )}
+              />
+
+              {total > pageSize && (
+                <div style={{ textAlign: 'center', marginTop: 24 }}>
+                  <Pagination
+                    current={currentPage}
+                    total={total}
+                    pageSize={pageSize}
+                    onChange={(page) => loadMyCreations(page)}
+                    showSizeChanger={false}
+                    showQuickJumper
+                    showTotal={(total, range) =>
+                      `第 ${range[0]}-${range[1]} 条，共 ${total} 条创作`
+                    }
+                  />
+                </div>
+              )}
+            </>
+          ) : (
+            <Empty
+              image={Empty.PRESENTED_IMAGE_SIMPLE}
+              description={
+                <div>
+                  <div style={{ marginBottom: 8 }}>还没有创作任何诗词</div>
+                  <Button
+                    type="primary"
+                    icon={<EditOutlined />}
+                    onClick={() => navigate('/creations')}
+                  >
+                    开始创作
+                  </Button>
+                </div>
+              }
+            />
+          )}
+        </Spin>
       </Card>
 
+      {/* 其他功能区域 */}
       <Card title="我的收藏" style={{ marginTop: 16 }}>
-        <div style={{ 
-          textAlign: 'center', 
-          color: '#999', 
+        <div style={{
+          textAlign: 'center',
+          color: '#999',
           padding: '40px',
           background: '#fafafa',
           borderRadius: '8px'

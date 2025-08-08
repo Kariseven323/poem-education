@@ -1,10 +1,10 @@
 // {{RIPER-5+SMART-6:
-//   Action: "Parallel-Added"
-//   Task_ID: "cbae72cf-b030-48a2-b381-ce2a1484c281"
-//   Timestamp: "2025-08-07T12:10:00+08:00"
+//   Action: "Modified"
+//   Task_ID: "ac87f049-a00a-4545-bd4b-e0f7068693dd"
+//   Timestamp: "2025-08-08T16:42:37+08:00"
 //   Authoring_Subagent: "PM-快速模式"
-//   Principle_Applied: "Service实现最佳实践，严格按照数据库表结构"
-//   Quality_Check: "编译通过，业务逻辑完整。"
+//   Principle_Applied: "Service集成最佳实践，异步统计更新"
+//   Quality_Check: "编译通过，集成ContentStatsService，向后兼容。"
 // }}
 // {{START_MODIFICATIONS}}
 package com.poem.education.service.impl;
@@ -16,6 +16,7 @@ import com.poem.education.entity.mysql.UserAction;
 import com.poem.education.exception.BusinessException;
 import com.poem.education.repository.mysql.UserActionRepository;
 import com.poem.education.service.UserActionService;
+import com.poem.education.service.ContentStatsService;
 import com.poem.education.constant.ErrorCode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -49,6 +50,9 @@ public class UserActionServiceImpl implements UserActionService {
     
     @Autowired
     private UserActionRepository userActionRepository;
+
+    @Autowired
+    private ContentStatsService contentStatsService;
     
     @Override
     @Transactional
@@ -73,7 +77,22 @@ public class UserActionServiceImpl implements UserActionService {
         userAction.setActionType(request.getActionType());
         
         UserAction savedAction = userActionRepository.save(userAction);
-        
+
+        // 异步更新内容统计数据
+        try {
+            contentStatsService.updateContentStats(
+                request.getTargetId(),
+                request.getTargetType(),
+                request.getActionType()
+            );
+            logger.debug("已触发内容统计更新: targetId={}, targetType={}, actionType={}",
+                        request.getTargetId(), request.getTargetType(), request.getActionType());
+        } catch (Exception e) {
+            // 统计更新失败不影响主要业务流程
+            logger.warn("内容统计更新失败，但用户行为记录成功: targetId={}, targetType={}, actionType={}",
+                       request.getTargetId(), request.getTargetType(), request.getActionType(), e);
+        }
+
         return convertToDTO(savedAction);
     }
     

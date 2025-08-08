@@ -201,10 +201,26 @@ public interface ContentStatsRepository extends JpaRepository<ContentStats, Long
     @Query("UPDATE ContentStats cs SET cs.commentCount = cs.commentCount + :increment, " +
            "cs.lastUpdated = CURRENT_TIMESTAMP " +
            "WHERE cs.contentId = :contentId AND cs.contentType = :contentType")
-    int incrementCommentCount(@Param("contentId") String contentId, 
-                             @Param("contentType") String contentType, 
+    int incrementCommentCount(@Param("contentId") String contentId,
+                             @Param("contentType") String contentType,
                              @Param("increment") Long increment);
-    
+
+    /**
+     * 更新内容的分享量
+     *
+     * @param contentId 内容ID
+     * @param contentType 内容类型
+     * @param increment 增量
+     * @return 影响行数
+     */
+    @Modifying
+    @Query("UPDATE ContentStats cs SET cs.shareCount = cs.shareCount + :increment, " +
+           "cs.lastUpdated = CURRENT_TIMESTAMP " +
+           "WHERE cs.contentId = :contentId AND cs.contentType = :contentType")
+    int incrementShareCount(@Param("contentId") String contentId,
+                           @Param("contentType") String contentType,
+                           @Param("increment") Long increment);
+
     /**
      * 查找最近更新的内容统计
      * 

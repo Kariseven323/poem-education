@@ -2,8 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { Card, List, Input, Select, Button, Space, Typography, Tag, Pagination, Spin, Empty } from 'antd';
 import { SearchOutlined, EyeOutlined, HeartOutlined, StarOutlined, BookOutlined } from '@ant-design/icons';
 import { useLocation } from 'react-router-dom';
-import { guwenAPI } from '../utils/api';
+import { guwenAPI, statsAPI } from '../utils/api';
 import { normalizeType } from '../utils/dataUtils';
+import viewTracker from '../utils/viewTracker';
 import PoemDetailModal from './PoemDetailModal';
 
 const { Search } = Input;
@@ -39,6 +40,10 @@ const PoemList = () => {
   // 弹窗状态
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedPoemId, setSelectedPoemId] = useState(null);
+
+  // 统计数据状态
+  const [poemStats, setPoemStats] = useState(new Map());
+  const [statsLoading, setStatsLoading] = useState(false);
 
   // 组件挂载时加载朝代列表
   useEffect(() => {
@@ -113,17 +118,83 @@ const PoemList = () => {
       }
 
       if (response.code === 200) {
-        setPoems(response.data?.list || []);
+        const poemList = response.data?.list || [];
+        setPoems(poemList);
         setPagination(prev => ({
           ...prev,
           total: response.data?.total || 0
         }));
+
+        // 异步加载统计数据，不阻塞诗词列表显示
+        if (poemList.length > 0) {
+          loadPoemStats(poemList);
+        }
       }
     } catch (error) {
       console.error('Failed to load poems:', error);
       setPoems([]);
     } finally {
       setLoading(false);
+    }
+  };
+
+  // 批量获取诗词统计数据
+  const loadPoemStats = async (poemList) => {
+    if (!poemList || poemList.length === 0) {
+      return;
+    }
+
+    setStatsLoading(true);
+    const newStatsMap = new Map();
+
+    try {
+      // 批量并行获取统计数据，提升性能
+      const statsPromises = poemList.map(async (poem) => {
+        try {
+          const response = await statsAPI.getContentStats(poem.id, 'guwen');
+          if (response.success && response.data) {
+            newStatsMap.set(poem.id, response.data);
+          } else {
+            // 如果获取失败，使用默认统计数据
+            newStatsMap.set(poem.id, {
+              viewCount: 0,
+              likeCount: 0,
+              favoriteCount: 0,
+              commentCount: 0,
+              shareCount: 0
+            });
+          }
+        } catch (error) {
+          console.warn('获取诗词统计失败:', poem.id, error);
+          // 错误情况下使用默认统计数据
+          newStatsMap.set(poem.id, {
+            viewCount: 0,
+            likeCount: 0,
+            favoriteCount: 0,
+            commentCount: 0,
+            shareCount: 0
+          });
+        }
+      });
+
+      // 等待所有统计数据获取完成
+      await Promise.all(statsPromises);
+
+      // 更新统计数据状态
+      setPoemStats(prevStats => {
+        const updatedStats = new Map(prevStats);
+        newStatsMap.forEach((stats, poemId) => {
+          updatedStats.set(poemId, stats);
+        });
+        return updatedStats;
+      });
+
+      console.debug('批量获取诗词统计完成:', newStatsMap.size, '条记录');
+
+    } catch (error) {
+      console.error('批量获取诗词统计失败:', error);
+    } finally {
+      setStatsLoading(false);
     }
   };
 
@@ -148,10 +219,49 @@ const PoemList = () => {
     }));
   };
 
+  // 防抖记录点击的引用
+  const clickRecordTimeouts = React.useRef(new Map());
+
+  // 组件卸载时清理所有防抖定时器
+  useEffect(() => {
+    return () => {
+      // 清理所有未完成的防抖定时器
+      clickRecordTimeouts.current.forEach((timeoutId) => {
+        clearTimeout(timeoutId);
+      });
+      clickRecordTimeouts.current.clear();
+    };
+  }, []);
+
   // 处理诗词点击
   const handlePoemClick = (poemId) => {
+    // 立即显示弹窗，不等待记录完成
     setSelectedPoemId(poemId);
     setModalVisible(true);
+
+    // 异步记录点击行为，使用防抖机制
+    const timeoutId = clickRecordTimeouts.current.get(poemId);
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+    }
+
+    const newTimeoutId = setTimeout(async () => {
+      try {
+        await viewTracker.recordPoemView(poemId, {
+          source: 'poem_list_click',
+          timestamp: new Date().toISOString()
+        });
+        console.debug('诗词点击记录成功:', poemId);
+      } catch (error) {
+        // 记录失败不影响用户体验，只在控制台输出警告
+        console.warn('诗词点击记录失败:', poemId, error);
+      } finally {
+        // 清理防抖记录
+        clickRecordTimeouts.current.delete(poemId);
+      }
+    }, 300); // 300ms防抖延迟
+
+    clickRecordTimeouts.current.set(poemId, newTimeoutId);
   };
 
   // 关闭弹窗
@@ -275,15 +385,15 @@ const PoemList = () => {
                   actions={[
                     <Space>
                       <EyeOutlined />
-                      {poem.stats?.viewCount || 0}
+                      {poemStats.get(poem.id)?.viewCount || poem.stats?.viewCount || 0}
                     </Space>,
                     <Space>
                       <HeartOutlined />
-                      {poem.stats?.likeCount || 0}
+                      {poemStats.get(poem.id)?.likeCount || poem.stats?.likeCount || 0}
                     </Space>,
                     <Space>
                       <StarOutlined />
-                      {poem.stats?.favoriteCount || 0}
+                      {poemStats.get(poem.id)?.favoriteCount || poem.stats?.favoriteCount || 0}
                     </Space>
                   ]}
                 >

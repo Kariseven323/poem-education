@@ -28,8 +28,9 @@ import {
   StarOutlined,
   LikeOutlined
 } from '@ant-design/icons';
-import { guwenAPI, commentAPI, userActionAPI } from '../utils/api';
+import { guwenAPI, commentAPI, userActionAPI, statsAPI } from '../utils/api';
 import { normalizeType } from '../utils/dataUtils';
+import viewTracker from '../utils/viewTracker';
 import moment from 'moment';
 import './PoemDetailModal.css';
 
@@ -56,6 +57,10 @@ const PoemDetailModal = ({ visible, onClose, poemId }) => {
   const [isLiked, setIsLiked] = useState(false);
   const [likeCount, setLikeCount] = useState(0);
   const [likingPoem, setLikingPoem] = useState(false);
+
+  // 实时统计数据状态
+  const [realTimeStats, setRealTimeStats] = useState(null);
+  const [statsLoading, setStatsLoading] = useState(false);
 
   // 回复相关状态
   const [replyingTo, setReplyingTo] = useState(null); // 当前回复的评论
@@ -651,6 +656,12 @@ const PoemDetailModal = ({ visible, onClose, poemId }) => {
         setPoem(response.data);
         setLikeCount(response.data.stats?.likeCount || 0);
 
+        // 记录诗词访问
+        viewTracker.recordPoemView(poemId);
+
+        // 异步获取实时统计数据
+        loadRealTimeStats();
+
         // 检查用户是否已点赞
         if (currentUser) {
           checkUserLikeStatus();
@@ -663,6 +674,28 @@ const PoemDetailModal = ({ visible, onClose, poemId }) => {
       message.error('加载诗词详情失败');
     } finally {
       setLoading(false);
+    }
+  };
+
+  // 获取实时统计数据
+  const loadRealTimeStats = async () => {
+    if (!poemId) return;
+
+    setStatsLoading(true);
+    try {
+      const response = await statsAPI.getContentStats(poemId, 'guwen');
+      if (response.success && response.data) {
+        setRealTimeStats(response.data);
+        // 同步更新点赞数，确保数据一致性
+        setLikeCount(response.data.likeCount || 0);
+        console.debug('获取实时统计数据成功:', response.data);
+      } else {
+        console.warn('获取实时统计数据失败:', response.message);
+      }
+    } catch (error) {
+      console.error('获取实时统计数据失败:', error);
+    } finally {
+      setStatsLoading(false);
     }
   };
 
@@ -791,6 +824,8 @@ const PoemDetailModal = ({ visible, onClose, poemId }) => {
           setIsLiked(false);
           setLikeCount(prev => Math.max(0, prev - 1));
           message.success('取消点赞成功');
+          // 刷新实时统计数据
+          loadRealTimeStats();
         }
       } else {
         // 点赞
@@ -803,6 +838,8 @@ const PoemDetailModal = ({ visible, onClose, poemId }) => {
           setIsLiked(true);
           setLikeCount(prev => prev + 1);
           message.success('点赞成功');
+          // 刷新实时统计数据
+          loadRealTimeStats();
         }
       }
     } catch (error) {
@@ -947,6 +984,8 @@ const PoemDetailModal = ({ visible, onClose, poemId }) => {
       setNewComment('');
       setIsLiked(false);
       setLikeCount(0);
+      setRealTimeStats(null);
+      setStatsLoading(false);
     }
   }, [visible]);
 
@@ -1044,6 +1083,35 @@ const PoemDetailModal = ({ visible, onClose, poemId }) => {
                             </div>
                           </Col>
                         )}
+                        {/* 统计信息 */}
+                        <Col span={24}>
+                          <Text strong>统计信息：</Text>
+                          <div style={{ marginTop: 8 }}>
+                            <Space size="large">
+                              <Space>
+                                <BookOutlined style={{ color: '#1890ff' }} />
+                                <Text>浏览：{realTimeStats?.viewCount || poem.stats?.viewCount || 0}</Text>
+                              </Space>
+                              <Space>
+                                <HeartOutlined style={{ color: '#f5222d' }} />
+                                <Text>点赞：{realTimeStats?.likeCount || likeCount}</Text>
+                              </Space>
+                              <Space>
+                                <StarOutlined style={{ color: '#faad14' }} />
+                                <Text>收藏：{realTimeStats?.favoriteCount || poem.stats?.favoriteCount || 0}</Text>
+                              </Space>
+                              <Space>
+                                <MessageOutlined style={{ color: '#52c41a' }} />
+                                <Text>评论：{realTimeStats?.commentCount || poem.stats?.commentCount || 0}</Text>
+                              </Space>
+                            </Space>
+                            {statsLoading && (
+                              <Text type="secondary" style={{ marginLeft: 8, fontSize: '12px' }}>
+                                (统计数据更新中...)
+                              </Text>
+                            )}
+                          </div>
+                        </Col>
                         {(poem.createdAt || poem.updatedAt) && (
                           <Col span={24}>
                             <div style={{ fontSize: '12px', color: '#999', marginTop: 8 }}>

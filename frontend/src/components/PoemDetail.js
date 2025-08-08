@@ -11,6 +11,7 @@ import {
   UserOutlined
 } from '@ant-design/icons';
 import { guwenAPI } from '../utils/api';
+import viewTracker from '../utils/viewTracker';
 import { normalizeType } from '../utils/dataUtils';
 
 const { Title, Paragraph, Text } = Typography;
@@ -34,6 +35,8 @@ const PoemDetail = () => {
       const response = await guwenAPI.getById(id);
       if (response.code === 200) {
         setPoem(response.data);
+        // 记录诗词访问
+        viewTracker.recordPoemView(id);
       } else {
         setError(response.message || '获取诗词详情失败');
       }
