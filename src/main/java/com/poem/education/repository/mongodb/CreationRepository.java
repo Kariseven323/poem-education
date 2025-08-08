@@ -87,12 +87,48 @@ public interface CreationRepository extends MongoRepository<Creation, String> {
     
     /**
      * 根据内容模糊查询创作
-     * 
+     *
      * @param content 内容关键字
      * @param pageable 分页参数
      * @return 创作分页列表
      */
     Page<Creation> findByContentContainingIgnoreCase(String content, Pageable pageable);
+
+    /**
+     * 根据关键词搜索创作（标题或内容包含关键词）
+     *
+     * @param keyword 关键词
+     * @param status 状态
+     * @param pageable 分页参数
+     * @return 创作分页列表
+     */
+    @Query("{ $and: [ " +
+           "{ $or: [ " +
+           "  { 'title': { $regex: ?0, $options: 'i' } }, " +
+           "  { 'content': { $regex: ?0, $options: 'i' } } " +
+           "] }, " +
+           "{ 'status': ?1 } " +
+           "] }")
+    Page<Creation> searchByKeyword(String keyword, Integer status, Pageable pageable);
+
+    /**
+     * 根据关键词和风格搜索创作
+     *
+     * @param keyword 关键词
+     * @param style 风格
+     * @param status 状态
+     * @param pageable 分页参数
+     * @return 创作分页列表
+     */
+    @Query("{ $and: [ " +
+           "{ $or: [ " +
+           "  { 'title': { $regex: ?0, $options: 'i' } }, " +
+           "  { 'content': { $regex: ?0, $options: 'i' } } " +
+           "] }, " +
+           "{ 'style': ?1 }, " +
+           "{ 'status': ?2 } " +
+           "] }")
+    Page<Creation> searchByKeywordAndStyle(String keyword, String style, Integer status, Pageable pageable);
     
     /**
      * 统计用户的创作数量

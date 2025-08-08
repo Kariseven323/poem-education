@@ -98,6 +98,9 @@ export const writerAPI = {
 
   // 获取所有朝代列表
   getDynasties: () => api.get('/writers/dynasties'),
+
+  // 获取作者作品列表（根据作者名称）
+  getWorksByName: (writerName, params) => api.get(`/guwen/by-writer/${encodeURIComponent(writerName)}`, { params }),
 };
 
 // 名句相关API
@@ -143,6 +146,62 @@ export const commentAPI = {
 
   // 取消点赞
   unlike: (id) => api.delete(`/comments/${id}/like`),
+};
+
+// 创作相关API
+export const creationAPI = {
+  // 创建新的诗词创作
+  create: (data) => api.post('/creations', data),
+
+  // 根据ID获取创作详情
+  getById: (id) => api.get(`/creations/${id}`),
+
+  // 获取当前用户的创作列表
+  getMyList: (params) => api.get('/creations/my', { params }),
+
+  // 获取公开创作列表
+  getPublicList: (params) => api.get('/creations/public', { params }),
+
+  // 更新创作信息
+  update: (id, data) => api.put(`/creations/${id}`, data),
+
+  // 删除创作
+  delete: (id) => api.delete(`/creations/${id}`),
+
+  // 触发AI评分
+  requestScore: (id) => api.post(`/creations/${id}/score`),
+
+  // 获取雷达图数据
+  getRadarData: (id) => api.get(`/creations/${id}/radar`),
+
+  // 切换创作公开状态
+  togglePublic: (id, isPublic) => api.put(`/creations/${id}/public`, null, {
+    params: { isPublic }
+  }),
+
+  // 点赞/取消点赞创作
+  toggleLike: (id) => api.post(`/creations/${id}/like`),
+
+  // 搜索创作
+  search: (params) => api.get('/creations/search', { params }),
+};
+
+// 便捷API函数 - 为组件提供简化的调用接口
+export const searchCreations = async (keyword, page = 1, size = 20, style = '') => {
+  const params = { keyword, page, size };
+  if (style) params.style = style;
+  return await creationAPI.search(params);
+};
+
+export const getUserCreations = async (userId, page = 1, size = 20, style = '', status = null) => {
+  const params = { page, size };
+  if (style) params.style = style;
+  if (status !== null) params.status = status;
+  return await creationAPI.getMyList(params);
+};
+
+export const toggleLike = async (userId, creationId) => {
+  return await creationAPI.toggleLike(creationId);
 };
 
 // 用户行为相关API

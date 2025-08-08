@@ -36,6 +36,8 @@
 - **Ant Design 5** - UI组件库
 - **React Router 6** - 路由管理
 - **Axios** - HTTP客户端
+- **ECharts 5** - 数据可视化图表库
+- **ECharts for React** - React ECharts组件封装
 - **Moment.js** - 日期处理
 
 ## 快速开始

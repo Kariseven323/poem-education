@@ -12,6 +12,7 @@ package com.poem.education;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.cache.annotation.EnableCaching;
+import org.springframework.scheduling.annotation.EnableAsync;
 
 /**
  * 诗词交流鉴赏平台主启动类
@@ -21,6 +22,7 @@ import org.springframework.cache.annotation.EnableCaching;
  */
 @SpringBootApplication
 @EnableCaching
+@EnableAsync
 public class PoemEducationApplication {
 
     public static void main(String[] args) {

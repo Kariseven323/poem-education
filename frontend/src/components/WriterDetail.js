@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { Card, Typography, Tag, Space, Button, Divider, Spin, Alert, Row, Col, Avatar } from 'antd';
 import { 
   ArrowLeftOutlined, 
@@ -14,6 +14,7 @@ const { Title, Paragraph, Text } = Typography;
 
 const WriterDetail = () => {
   const { id } = useParams();
+  const navigate = useNavigate();
   const [writer, setWriter] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -201,9 +202,9 @@ const WriterDetail = () => {
             }}>
               <BookOutlined style={{ fontSize: '48px', marginBottom: 16 }} />
               <div>作品列表功能开发中...</div>
-              <Button 
-                type="link" 
-                href={`/poems?writer=${encodeURIComponent(writer.name)}`}
+              <Button
+                type="link"
+                onClick={() => navigate(`/poems?writer=${encodeURIComponent(writer.name)}`)}
                 style={{ marginTop: 8 }}
               >
                 查看相关诗词

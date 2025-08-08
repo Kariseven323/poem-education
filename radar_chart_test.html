@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>雷达图数据测试</title>
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.0/dist/echarts.min.js"></script>
+</head>
+<body>
+    <div id="radar-chart" style="width: 600px; height: 400px;"></div>
+    
+    <script>
+        // 模拟后端返回的数据格式
+        const backendData = {
+            creationId: "test-001",
+            title: "暮色",
+            hasScore: true,
+            totalScore: 85,
+            indicators: [
+                { name: "韵律", max: 100 },
+                { name: "意象", max: 100 },
+                { name: "情感", max: 100 },
+                { name: "技法", max: 100 },
+                { name: "创新", max: 100 }
+            ],
+            series: [{
+                name: "评分",
+                value: [75, 88, 92, 80, 90], // 后端使用value字段
+                values: [75, 88, 92, 80, 90], // 兼容性字段
+                itemStyle: { color: "#1890ff" }
+            }]
+        };
+
+        // 初始化ECharts
+        const chart = echarts.init(document.getElementById('radar-chart'));
+        
+        // 配置选项
+        const option = {
+            title: {
+                text: `《${backendData.title}》评分雷达图`,
+                subtext: `总分：${backendData.totalScore}分`,
+                left: 'center'
+            },
+            radar: {
+                indicator: backendData.indicators.map(indicator => ({
+                    name: indicator.name,
+                    max: indicator.max
+                })),
+                shape: 'polygon',
+                radius: '65%'
+            },
+            series: backendData.series.map(seriesItem => ({
+                name: seriesItem.name,
+                type: 'radar',
+                data: [{
+                    value: seriesItem.values || seriesItem.value, // 兼容两种字段名
+                    name: seriesItem.name,
+                    lineStyle: {
+                        width: 2,
+                        color: seriesItem.itemStyle?.color || '#1890ff'
+                    },
+                    areaStyle: {
+                        color: seriesItem.itemStyle?.color || '#1890ff',
+                        opacity: 0.1
+                    }
+                }]
+            }))
+        };
+        
+        // 渲染图表
+        chart.setOption(option);
+        
+        console.log('雷达图数据:', backendData);
+        console.log('ECharts配置:', option);
+    </script>
+</body>
+</html>

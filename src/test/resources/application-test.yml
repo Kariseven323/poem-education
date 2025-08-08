@@ -34,6 +34,24 @@ spring:
     port: 6379
     database: 1
 
+# AI模型API配置 - 测试环境
+ai:
+  score:
+    api-url: http://127.0.0.1:1234
+    api-key: test-api-key
+    model: deepseek-chat
+    timeout: 30000
+    mock-enabled: true
+    retry-count: 3
+    retry-interval: 1000
+
+# JWT配置
+jwt:
+  secret: test-jwt-secret-key-for-testing-environment-minimum-512-bits-required
+  expiration: 86400
+  header: Authorization
+  prefix: Bearer
+
 # 日志配置
 logging:
   level:

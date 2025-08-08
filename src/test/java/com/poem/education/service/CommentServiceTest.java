@@ -9,6 +9,7 @@ import com.poem.education.exception.BusinessException;
 import com.poem.education.repository.mongodb.CommentRepository;
 import com.poem.education.repository.mysql.UserRepository;
 import com.poem.education.service.impl.CommentServiceImpl;
+import org.bson.types.ObjectId;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -60,7 +61,7 @@ class CommentServiceTest {
         
         testComment = new Comment();
         testComment.setId("507f1f77bcf86cd799439011");
-        testComment.setTargetId("507f1f77bcf86cd799439012");
+        testComment.setTargetId(new ObjectId("507f1f77bcf86cd799439012"));
         testComment.setTargetType("guwen");
         testComment.setUserId(1L);
         testComment.setContent("这首诗写得真好！");
@@ -83,19 +84,19 @@ class CommentServiceTest {
         // Given
         List<Comment> comments = Arrays.asList(testComment);
         Page<Comment> commentPage = new PageImpl<>(comments, Pageable.unpaged(), comments.size());
-        when(commentRepository.findByTargetIdAndTargetTypeAndStatus(eq("507f1f77bcf86cd799439012"), eq("guwen"), eq(1), any(Pageable.class)))
+        when(commentRepository.findByTargetIdAndTargetTypeAndStatus(eq(new ObjectId("507f1f77bcf86cd799439012")), eq("guwen"), eq(1), any(Pageable.class)))
                 .thenReturn(commentPage);
         when(userRepository.findById(anyLong())).thenReturn(Optional.of(testUser));
-        
+
         // When
         PageResult<CommentDTO> result = commentService.getCommentsByTarget("507f1f77bcf86cd799439012", "guwen", 1, 20);
-        
+
         // Then
         assertThat(result).isNotNull();
         assertThat(result.getList()).hasSize(1);
         assertThat(result.getList().get(0).getContent()).isEqualTo("这首诗写得真好！");
-        
-        verify(commentRepository).findByTargetIdAndTargetTypeAndStatus(eq("507f1f77bcf86cd799439012"), eq("guwen"), eq(1), any(Pageable.class));
+
+        verify(commentRepository).findByTargetIdAndTargetTypeAndStatus(eq(new ObjectId("507f1f77bcf86cd799439012")), eq("guwen"), eq(1), any(Pageable.class));
     }
     
     @Test
@@ -304,18 +305,18 @@ class CommentServiceTest {
         // Given
         List<Comment> comments = Arrays.asList(testComment);
         Page<Comment> commentPage = new PageImpl<>(comments, Pageable.unpaged(), comments.size());
-        when(commentRepository.findByTargetIdAndTargetTypeAndStatus(anyString(), anyString(), anyInt(), any(Pageable.class)))
+        when(commentRepository.findByTargetIdAndTargetTypeAndStatus(any(ObjectId.class), anyString(), anyInt(), any(Pageable.class)))
                 .thenReturn(commentPage);
         when(userRepository.findById(anyLong())).thenReturn(Optional.of(testUser));
-        
+
         // When
         List<CommentDTO> result = commentService.getHotComments("507f1f77bcf86cd799439012", "guwen", 10);
-        
+
         // Then
         assertThat(result).isNotNull();
         assertThat(result).hasSize(1);
-        
-        verify(commentRepository).findByTargetIdAndTargetTypeAndStatus(eq("507f1f77bcf86cd799439012"), eq("guwen"), eq(1), any(Pageable.class));
+
+        verify(commentRepository).findByTargetIdAndTargetTypeAndStatus(eq(new ObjectId("507f1f77bcf86cd799439012")), eq("guwen"), eq(1), any(Pageable.class));
     }
     
     @Test
@@ -323,18 +324,18 @@ class CommentServiceTest {
         // Given
         List<Comment> comments = Arrays.asList(testComment);
         Page<Comment> commentPage = new PageImpl<>(comments, Pageable.unpaged(), comments.size());
-        when(commentRepository.findByTargetIdAndTargetTypeAndStatus(eq("507f1f77bcf86cd799439012"), eq("guwen"), eq(1), any(Pageable.class)))
+        when(commentRepository.findByTargetIdAndTargetTypeAndStatus(eq(new ObjectId("507f1f77bcf86cd799439012")), eq("guwen"), eq(1), any(Pageable.class)))
                 .thenReturn(commentPage);
         when(userRepository.findById(anyLong())).thenReturn(Optional.of(testUser));
-        
+
         // When
         List<CommentDTO> result = commentService.getLatestComments("507f1f77bcf86cd799439012", "guwen", 10);
-        
+
         // Then
         assertThat(result).isNotNull();
         assertThat(result).hasSize(1);
-        
-        verify(commentRepository).findByTargetIdAndTargetTypeAndStatus(eq("507f1f77bcf86cd799439012"), eq("guwen"), eq(1), any(Pageable.class));
+
+        verify(commentRepository).findByTargetIdAndTargetTypeAndStatus(eq(new ObjectId("507f1f77bcf86cd799439012")), eq("guwen"), eq(1), any(Pageable.class));
     }
     
     @Test

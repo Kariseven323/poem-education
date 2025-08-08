@@ -9,6 +9,7 @@ import com.poem.education.entity.mysql.UserAction;
 import com.poem.education.entity.mysql.UserFavorite;
 
 import java.time.LocalDateTime;
+import java.util.Arrays;
 
 /**
  * 测试数据构建工具类
@@ -108,7 +109,7 @@ public class TestDataBuilder {
         guwen.setDynasty("唐");
         guwen.setWriter("李白");
         guwen.setContent("床前明月光，疑是地上霜。举头望明月，低头思故乡。");
-        guwen.setType("诗");
+        guwen.setType(Arrays.asList("诗"));
         guwen.setRemark("李白的代表作之一");
         guwen.setShangxi("这首诗表达了诗人对故乡的思念之情");
         guwen.setTranslation("床前洒满了明亮的月光，以为是地上结了霜。抬头看看天上的明月，低头思念远方的故乡。");

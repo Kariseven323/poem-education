@@ -133,6 +133,24 @@ info:
     java:
       version: 11
 
+# AI模型API配置
+ai:
+  score:
+    # AI评分服务API地址
+    api-url: ${AI_SCORE_API_URL:http://127.0.0.1:1234}
+    # API密钥
+    api-key: ${AI_SCORE_API_KEY:deepseek-chat-67b-4b2a-9e3c-1f2d3e4f5g6h}
+    # 模型名称
+    model: ${AI_SCORE_MODEL:deepseek-chat}
+    # 请求超时时间（毫秒）
+    timeout: ${AI_SCORE_TIMEOUT:30000}
+    # 是否启用Mock模式（开发测试用）
+    mock-enabled: ${AI_SCORE_MOCK_ENABLED:false}
+    # 重试次数
+    retry-count: ${AI_SCORE_RETRY_COUNT:3}
+    # 重试间隔（毫秒）
+    retry-interval: ${AI_SCORE_RETRY_INTERVAL:1000}
+
 ---
 # 开发环境配置
 spring:

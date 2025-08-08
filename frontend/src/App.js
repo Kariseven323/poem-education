@@ -21,6 +21,9 @@ import WriterDetail from './components/WriterDetail';
 import SentenceList from './components/SentenceList';
 import UserProfile from './components/UserProfile';
 import APITest from './components/APITest';
+import PoemCreation from './components/PoemCreation';
+import CreationDetail from './components/CreationDetail';
+import PoemCommunity from './components/PoemCommunity';
 import { userAPI } from './utils/api';
 
 const { Header, Content, Sider } = Layout;
@@ -97,6 +100,16 @@ function AppContent() {
       key: '/sentences',
       icon: <EditOutlined />,
       label: '名句摘录',
+    },
+    {
+      key: '/creations',
+      icon: <MessageOutlined />,
+      label: '诗词创作',
+    },
+    {
+      key: '/community',
+      icon: <EditOutlined />,
+      label: '诗词社区',
     },
     {
       key: '/api-test',
@@ -177,6 +190,9 @@ function AppContent() {
                 <Route path="/writers" element={<WriterList />} />
                 <Route path="/writers/:id" element={<WriterDetail />} />
                 <Route path="/sentences" element={<SentenceList />} />
+                <Route path="/creations" element={user ? <PoemCreation /> : <Navigate to="/login" />} />
+                <Route path="/creations/:id" element={<CreationDetail />} />
+                <Route path="/community" element={<PoemCommunity />} />
                 <Route path="/profile" element={user ? <UserProfile user={user} /> : <Navigate to="/login" />} />
                 <Route path="/api-test" element={<APITest />} />
 

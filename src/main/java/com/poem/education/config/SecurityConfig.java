@@ -102,6 +102,12 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
             .antMatchers("/api/v1/sentences/**").permitAll()
             // 允许评论相关接口（查看、创建、删除、点赞等）
             .antMatchers("/api/v1/comments/**").permitAll()
+            // 创作相关接口配置
+            .antMatchers("/api/v1/creations/public").permitAll()
+            .antMatchers("/api/v1/creations/search").permitAll()
+            .antMatchers("/api/v1/creations/{id}").permitAll()
+            .antMatchers("/api/v1/creations/{id}/radar").permitAll()
+            .antMatchers("/api/v1/creations/**").authenticated()
             // 允许Swagger文档访问
             .antMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
             // 允许健康检查

@@ -52,7 +52,7 @@ class GuwenServiceTest {
         testGuwen.setDynasty("唐");
         testGuwen.setWriter("李白");
         testGuwen.setContent("床前明月光，疑是地上霜。举头望明月，低头思故乡。");
-        testGuwen.setType("诗");
+        testGuwen.setType(Arrays.asList("诗"));
         testGuwen.setCreatedAt(LocalDateTime.now());
         testGuwen.setUpdatedAt(LocalDateTime.now());
         
@@ -62,7 +62,7 @@ class GuwenServiceTest {
         guwen2.setDynasty("唐");
         guwen2.setWriter("孟浩然");
         guwen2.setContent("春眠不觉晓，处处闻啼鸟。夜来风雨声，花落知多少。");
-        guwen2.setType("诗");
+        guwen2.setType(Arrays.asList("诗"));
         guwen2.setCreatedAt(LocalDateTime.now());
         guwen2.setUpdatedAt(LocalDateTime.now());
         
@@ -203,17 +203,17 @@ class GuwenServiceTest {
         request.setSize(20);
         
         Page<Guwen> guwenPage = new PageImpl<>(Arrays.asList(testGuwen), Pageable.unpaged(), 1);
-        when(guwenRepository.findByAdvancedSearch(any(), eq("李白"), eq("唐"), any(), any(Pageable.class)))
+        when(guwenRepository.findByWriterRegexAndDynasty(eq("李白"), eq("唐"), any(Pageable.class)))
                 .thenReturn(guwenPage);
-        
+
         // When
         PageResult<GuwenDTO> result = guwenService.searchGuwen(request);
-        
+
         // Then
         assertThat(result).isNotNull();
         assertThat(result.getList()).hasSize(1);
-        
-        verify(guwenRepository).findByAdvancedSearch(eq(null), eq("李白"), eq("唐"), eq(null), any(Pageable.class));
+
+        verify(guwenRepository).findByWriterRegexAndDynasty(eq("李白"), eq("唐"), any(Pageable.class));
     }
     
     @Test

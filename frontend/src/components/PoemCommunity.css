@@ -1,0 +1,302 @@
+/* {{RIPER-5+SMART-6:
+   Action: "Parallel-Added"
+   Task_ID: "poem-community-styles"
+   Timestamp: "2025-08-08T15:43:55+08:00"
+   Authoring_Subagent: "PM-快速模式"
+   Principle_Applied: "DRY (Don't Repeat Yourself)"
+   Quality_Check: "响应式设计，用户体验优化。"
+}} */
+/* {{START_MODIFICATIONS}} */
+
+.poem-community {
+    padding: 24px;
+    max-width: 1200px;
+    margin: 0 auto;
+    background-color: #f5f5f5;
+    min-height: 100vh;
+}
+
+/* 页面标题区域 */
+.community-header {
+    text-align: center;
+    margin-bottom: 32px;
+    padding: 32px 0;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 12px;
+    color: white;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+}
+
+.community-header h1 {
+    font-size: 2.5rem;
+    margin-bottom: 8px;
+    font-weight: 600;
+    color: white;
+}
+
+.community-header p {
+    font-size: 1.1rem;
+    opacity: 0.9;
+    margin: 0;
+}
+
+/* 搜索和筛选区域 */
+.search-filters {
+    background: white;
+    padding: 24px;
+    border-radius: 12px;
+    margin-bottom: 24px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.search-filters .ant-input-search {
+    border-radius: 8px;
+}
+
+.search-filters .ant-select {
+    border-radius: 8px;
+}
+
+.search-filters .ant-btn-group .ant-btn {
+    border-radius: 0;
+}
+
+.search-filters .ant-btn-group .ant-btn:first-child {
+    border-top-left-radius: 8px;
+    border-bottom-left-radius: 8px;
+}
+
+.search-filters .ant-btn-group .ant-btn:last-child {
+    border-top-right-radius: 8px;
+    border-bottom-right-radius: 8px;
+}
+
+/* 诗词网格布局 */
+.poems-grid {
+    margin-bottom: 32px;
+}
+
+/* 诗词卡片样式 */
+.poem-card {
+    height: 100%;
+    border-radius: 12px;
+    overflow: hidden;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    border: 1px solid #f0f0f0;
+}
+
+.poem-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+}
+
+.poem-card .ant-card-body {
+    padding: 16px;
+    height: calc(100% - 57px); /* 减去actions的高度 */
+    display: flex;
+    flex-direction: column;
+}
+
+.poem-card .ant-card-meta {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.poem-card .ant-card-meta-detail {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+/* 诗词标题 */
+.poem-title {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.poem-title span {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #262626;
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.poem-title .ant-tag {
+    margin-left: 8px;
+    border-radius: 4px;
+    font-size: 0.75rem;
+}
+
+/* 诗词内容 */
+.poem-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+.content-preview {
+    font-size: 0.9rem;
+    line-height: 1.6;
+    color: #595959;
+    margin-bottom: 12px;
+    flex: 1;
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-line-clamp: 4;
+    -webkit-box-orient: vertical;
+}
+
+/* 诗词元信息 */
+.poem-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.8rem;
+    color: #8c8c8c;
+    border-top: 1px solid #f0f0f0;
+    padding-top: 8px;
+}
+
+.author-name {
+    font-weight: 500;
+}
+
+.poem-date {
+    color: #bfbfbf;
+}
+
+/* 卡片操作按钮 */
+.poem-card .ant-card-actions {
+    background-color: #fafafa;
+    border-top: 1px solid #f0f0f0;
+}
+
+.poem-card .ant-card-actions > li {
+    margin: 8px 0;
+}
+
+.poem-card .ant-card-actions .ant-btn {
+    border: none;
+    box-shadow: none;
+    color: #8c8c8c;
+    font-size: 0.9rem;
+}
+
+.poem-card .ant-card-actions .ant-btn:hover {
+    color: #1890ff;
+    background-color: transparent;
+}
+
+/* 空状态 */
+.empty-state {
+    text-align: center;
+    padding: 64px 0;
+    color: #8c8c8c;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.empty-state p {
+    font-size: 1.1rem;
+    margin: 0;
+}
+
+/* 分页 */
+.pagination-wrapper {
+    display: flex;
+    justify-content: center;
+    padding: 24px 0;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.pagination-wrapper .ant-pagination {
+    margin: 0;
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+    .poem-community {
+        padding: 16px;
+    }
+    
+    .community-header {
+        padding: 24px 16px;
+        margin-bottom: 24px;
+    }
+    
+    .community-header h1 {
+        font-size: 2rem;
+    }
+    
+    .search-filters {
+        padding: 16px;
+    }
+    
+    .poem-card .ant-card-body {
+        padding: 12px;
+    }
+    
+    .content-preview {
+        -webkit-line-clamp: 3;
+    }
+}
+
+@media (max-width: 576px) {
+    .community-header h1 {
+        font-size: 1.8rem;
+    }
+    
+    .community-header p {
+        font-size: 1rem;
+    }
+    
+    .poem-title span {
+        font-size: 1rem;
+    }
+    
+    .content-preview {
+        font-size: 0.85rem;
+        -webkit-line-clamp: 2;
+    }
+    
+    .poem-meta {
+        font-size: 0.75rem;
+    }
+}
+
+/* 加载状态 */
+.poem-community .ant-spin-container {
+    min-height: 200px;
+}
+
+/* 自定义滚动条 */
+.poem-community::-webkit-scrollbar {
+    width: 6px;
+}
+
+.poem-community::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 3px;
+}
+
+.poem-community::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 3px;
+}
+
+.poem-community::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
+}
+
+/* {{END_MODIFICATIONS}} */

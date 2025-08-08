@@ -20,6 +20,7 @@ import org.springframework.data.mongodb.core.mapping.Field;
 
 import javax.validation.constraints.*;
 import java.time.LocalDateTime;
+import java.util.List;
 
 /**
  * 创作实体类
@@ -96,6 +97,13 @@ public class Creation {
      */
     @Field("aiScore")
     private AiScore aiScore;
+
+    /**
+     * 雷达图数据
+     * 按照数据库设计，独立存储雷达图数据以提高查询性能
+     */
+    @Field("radarData")
+    private RadarData radarData;
     
     /**
      * 描述
@@ -117,6 +125,27 @@ public class Creation {
      */
     @Field("updatedAt")
     private LocalDateTime updatedAt;
+
+    /**
+     * 是否公开
+     * 默认为false（私有）
+     */
+    @Field("isPublic")
+    private Boolean isPublic;
+
+    /**
+     * 点赞数
+     * 默认为0
+     */
+    @Field("likeCount")
+    private Integer likeCount;
+
+    /**
+     * 评论数
+     * 默认为0
+     */
+    @Field("commentCount")
+    private Integer commentCount;
     
     /**
      * AI评分嵌套类
@@ -131,19 +160,34 @@ public class Creation {
         @Indexed(name = "totalScore_-1", direction = IndexDirection.DESCENDING)
         @Field("totalScore")
         private Integer totalScore;
-        
+
         /**
-         * 详细评分
+         * AI反馈建议
+         * 按照数据库设计，字段名为feedback而非details
          */
-        @Field("details")
-        private String details;
-        
+        @Field("feedback")
+        private String feedback;
+
         /**
          * 评分时间
          */
         @Field("scoredAt")
         private LocalDateTime scoredAt;
-        
+
+        /**
+         * 多维度评分
+         * 包含韵律、意象、情感、技法、创新五个维度
+         */
+        @Field("dimensions")
+        private ScoreDimensions dimensions;
+
+        /**
+         * AI思考过程
+         * 记录AI评分时的思考分析过程，用于展示给用户
+         */
+        @Field("thinkingProcess")
+        private String thinkingProcess;
+
         // 构造函数
         public AiScore() {
         }
@@ -162,12 +206,30 @@ public class Creation {
             this.totalScore = totalScore;
         }
         
-        public String getDetails() {
-            return details;
+        public String getFeedback() {
+            return feedback;
         }
-        
+
+        public void setFeedback(String feedback) {
+            this.feedback = feedback;
+        }
+
+        /**
+         * 兼容性方法：保持向后兼容
+         * @deprecated 使用getFeedback()替代
+         */
+        @Deprecated
+        public String getDetails() {
+            return feedback;
+        }
+
+        /**
+         * 兼容性方法：保持向后兼容
+         * @deprecated 使用setFeedback()替代
+         */
+        @Deprecated
         public void setDetails(String details) {
-            this.details = details;
+            this.feedback = details;
         }
         
         public LocalDateTime getScoredAt() {
@@ -178,13 +240,147 @@ public class Creation {
             this.scoredAt = scoredAt;
         }
         
+        public ScoreDimensions getDimensions() {
+            return dimensions;
+        }
+
+        public void setDimensions(ScoreDimensions dimensions) {
+            this.dimensions = dimensions;
+        }
+
+        public String getThinkingProcess() {
+            return thinkingProcess;
+        }
+
+        public void setThinkingProcess(String thinkingProcess) {
+            this.thinkingProcess = thinkingProcess;
+        }
+
         @Override
         public String toString() {
             return "AiScore{" +
                     "totalScore=" + totalScore +
-                    ", details='" + details + '\'' +
+                    ", feedback='" + feedback + '\'' +
                     ", scoredAt=" + scoredAt +
+                    ", dimensions=" + dimensions +
+                    ", thinkingProcess='" + thinkingProcess + '\'' +
                     '}';
+        }
+
+        /**
+         * 多维度评分嵌套类
+         * 包含诗词评价的五个维度
+         */
+        public static class ScoreDimensions {
+            /**
+             * 韵律评分
+             * 范围0-100，评价诗词的韵律美感
+             */
+            @Min(value = 0, message = "韵律评分最小为0")
+            @Max(value = 100, message = "韵律评分最大为100")
+            @Field("rhythm")
+            private Integer rhythm;
+
+            /**
+             * 意象评分
+             * 范围0-100，评价诗词的意象表达
+             */
+            @Min(value = 0, message = "意象评分最小为0")
+            @Max(value = 100, message = "意象评分最大为100")
+            @Field("imagery")
+            private Integer imagery;
+
+            /**
+             * 情感评分
+             * 范围0-100，评价诗词的情感表达深度
+             */
+            @Min(value = 0, message = "情感评分最小为0")
+            @Max(value = 100, message = "情感评分最大为100")
+            @Field("emotion")
+            private Integer emotion;
+
+            /**
+             * 技法评分
+             * 范围0-100，评价诗词的写作技巧运用
+             */
+            @Min(value = 0, message = "技法评分最小为0")
+            @Max(value = 100, message = "技法评分最大为100")
+            @Field("technique")
+            private Integer technique;
+
+            /**
+             * 创新评分
+             * 范围0-100，评价诗词的创新性和独特性
+             */
+            @Min(value = 0, message = "创新评分最小为0")
+            @Max(value = 100, message = "创新评分最大为100")
+            @Field("innovation")
+            private Integer innovation;
+
+            // 构造函数
+            public ScoreDimensions() {
+            }
+
+            public ScoreDimensions(Integer rhythm, Integer imagery, Integer emotion,
+                                 Integer technique, Integer innovation) {
+                this.rhythm = rhythm;
+                this.imagery = imagery;
+                this.emotion = emotion;
+                this.technique = technique;
+                this.innovation = innovation;
+            }
+
+            // Getter and Setter methods
+            public Integer getRhythm() {
+                return rhythm;
+            }
+
+            public void setRhythm(Integer rhythm) {
+                this.rhythm = rhythm;
+            }
+
+            public Integer getImagery() {
+                return imagery;
+            }
+
+            public void setImagery(Integer imagery) {
+                this.imagery = imagery;
+            }
+
+            public Integer getEmotion() {
+                return emotion;
+            }
+
+            public void setEmotion(Integer emotion) {
+                this.emotion = emotion;
+            }
+
+            public Integer getTechnique() {
+                return technique;
+            }
+
+            public void setTechnique(Integer technique) {
+                this.technique = technique;
+            }
+
+            public Integer getInnovation() {
+                return innovation;
+            }
+
+            public void setInnovation(Integer innovation) {
+                this.innovation = innovation;
+            }
+
+            @Override
+            public String toString() {
+                return "ScoreDimensions{" +
+                        "rhythm=" + rhythm +
+                        ", imagery=" + imagery +
+                        ", emotion=" + emotion +
+                        ", technique=" + technique +
+                        ", innovation=" + innovation +
+                        '}';
+            }
         }
     }
     
@@ -256,9 +452,17 @@ public class Creation {
     public AiScore getAiScore() {
         return aiScore;
     }
-    
+
     public void setAiScore(AiScore aiScore) {
         this.aiScore = aiScore;
+    }
+
+    public RadarData getRadarData() {
+        return radarData;
+    }
+
+    public void setRadarData(RadarData radarData) {
+        this.radarData = radarData;
     }
     
     public String getDescription() {
@@ -283,6 +487,30 @@ public class Creation {
     
     public void setUpdatedAt(LocalDateTime updatedAt) {
         this.updatedAt = updatedAt;
+    }
+
+    public Boolean getIsPublic() {
+        return isPublic;
+    }
+
+    public void setIsPublic(Boolean isPublic) {
+        this.isPublic = isPublic;
+    }
+
+    public Integer getLikeCount() {
+        return likeCount;
+    }
+
+    public void setLikeCount(Integer likeCount) {
+        this.likeCount = likeCount;
+    }
+
+    public Integer getCommentCount() {
+        return commentCount;
+    }
+
+    public void setCommentCount(Integer commentCount) {
+        this.commentCount = commentCount;
     }
     
     @Override
@@ -320,6 +548,60 @@ public class Creation {
         public static final Integer REJECTED = -1;  // 审核不通过
         public static final Integer PENDING = 0;    // 待审核
         public static final Integer PUBLISHED = 1;  // 已发布
+    }
+
+    /**
+     * 雷达图数据嵌套类
+     * 按照数据库设计，独立存储雷达图数据
+     */
+    public static class RadarData {
+        /**
+         * 雷达图标签
+         * 固定为["韵律", "意象", "情感", "技法", "创新"]
+         */
+        @Field("labels")
+        private List<String> labels;
+
+        /**
+         * 雷达图数值
+         * 对应各维度的评分值
+         */
+        @Field("values")
+        private List<Integer> values;
+
+        // 构造函数
+        public RadarData() {
+        }
+
+        public RadarData(List<String> labels, List<Integer> values) {
+            this.labels = labels;
+            this.values = values;
+        }
+
+        // Getter and Setter methods
+        public List<String> getLabels() {
+            return labels;
+        }
+
+        public void setLabels(List<String> labels) {
+            this.labels = labels;
+        }
+
+        public List<Integer> getValues() {
+            return values;
+        }
+
+        public void setValues(List<Integer> values) {
+            this.values = values;
+        }
+
+        @Override
+        public String toString() {
+            return "RadarData{" +
+                    "labels=" + labels +
+                    ", values=" + values +
+                    '}';
+        }
     }
 }
 // {{END_MODIFICATIONS}}

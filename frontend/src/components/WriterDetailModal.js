@@ -23,6 +23,7 @@ import {
 } from '@ant-design/icons';
 import { writerAPI } from '../utils/api';
 import { sanitizeHtmlContent, formatTextWithLineBreaks } from '../utils/dataUtils';
+import WriterWorksSection from './WriterWorksSection';
 import './WriterDetailModal.css';
 
 const { Title, Paragraph, Text } = Typography;
@@ -261,21 +262,7 @@ const WriterDetailModal = ({ visible, onClose, writerId }) => {
                   {/* 代表作品 */}
                   <div style={{ marginBottom: 16 }}>
                     <Title level={4} style={{ marginBottom: 12, color: '#1890ff' }}>代表作品</Title>
-                    {writer.masterpieces && writer.masterpieces.length > 0 ? (
-                      <div>
-                        {writer.masterpieces.map((work, index) => (
-                          <Tag key={index} color="orange" style={{ marginBottom: 8, marginRight: 8 }}>
-                            <BookOutlined /> {work}
-                          </Tag>
-                        ))}
-                      </div>
-                    ) : (
-                      <Empty
-                        description="暂无代表作品信息"
-                        image={Empty.PRESENTED_IMAGE_SIMPLE}
-                        style={{ padding: '20px' }}
-                      />
-                    )}
+                    <WriterWorksSection writerId={writer.id} writerName={writer.name} />
                   </div>
 
                   {/* 操作按钮 */}

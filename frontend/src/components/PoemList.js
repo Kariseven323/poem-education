@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Card, List, Input, Select, Button, Space, Typography, Tag, Pagination, Spin, Empty } from 'antd';
 import { SearchOutlined, EyeOutlined, HeartOutlined, StarOutlined, BookOutlined } from '@ant-design/icons';
+import { useLocation } from 'react-router-dom';
 import { guwenAPI } from '../utils/api';
 import { normalizeType } from '../utils/dataUtils';
 import PoemDetailModal from './PoemDetailModal';
@@ -10,6 +11,7 @@ const { Option } = Select;
 const { Title, Text, Paragraph } = Typography;
 
 const PoemList = () => {
+  const location = useLocation();
   const [poems, setPoems] = useState([]);
   const [loading, setLoading] = useState(false);
   const [dynasties, setDynasties] = useState([]);
@@ -19,13 +21,20 @@ const PoemList = () => {
     pageSize: 20,
     total: 0
   });
-  const [filters, setFilters] = useState({
-    keyword: '',
-    dynasty: '',
-    writer: '',
-    type: '',
-    searchType: 'smart' // 搜索类型：smart(智能), fuzzy(模糊), exact(精确), content(内容)
-  });
+
+  // 从URL参数中获取初始筛选条件
+  const getInitialFilters = () => {
+    const searchParams = new URLSearchParams(location.search);
+    return {
+      keyword: searchParams.get('keyword') || '',
+      dynasty: searchParams.get('dynasty') || '',
+      writer: searchParams.get('writer') || '',
+      type: searchParams.get('type') || '',
+      searchType: 'smart' // 搜索类型：smart(智能), fuzzy(模糊), exact(精确), content(内容)
+    };
+  };
+
+  const [filters, setFilters] = useState(getInitialFilters());
 
   // 弹窗状态
   const [modalVisible, setModalVisible] = useState(false);
@@ -35,6 +44,13 @@ const PoemList = () => {
   useEffect(() => {
     loadDynasties();
   }, []);
+
+  // 监听URL参数变化，更新筛选条件
+  useEffect(() => {
+    const newFilters = getInitialFilters();
+    setFilters(newFilters);
+    setPagination(prev => ({ ...prev, current: 1 }));
+  }, [location.search]);
 
   // 监听分页和筛选条件变化
   useEffect(() => {
@@ -155,6 +171,30 @@ const PoemList = () => {
         <Paragraph>
           探索中华诗词的瑰丽世界，感受千年文化的深厚底蕴
         </Paragraph>
+
+        {/* 显示当前筛选条件 */}
+        {(filters.writer || filters.dynasty || filters.type) && (
+          <div style={{ marginBottom: 16 }}>
+            <Space wrap>
+              <Text type="secondary">当前筛选：</Text>
+              {filters.writer && (
+                <Tag color="green" closable onClose={() => handleFilterChange('writer', '')}>
+                  作者：{filters.writer}
+                </Tag>
+              )}
+              {filters.dynasty && (
+                <Tag color="blue" closable onClose={() => handleFilterChange('dynasty', '')}>
+                  朝代：{filters.dynasty}
+                </Tag>
+              )}
+              {filters.type && (
+                <Tag color="orange" closable onClose={() => handleFilterChange('type', '')}>
+                  类型：{filters.type}
+                </Tag>
+              )}
+            </Space>
+          </div>
+        )}
         
         {/* 搜索和筛选 */}
         <Space direction="vertical" style={{ width: '100%' }}>
