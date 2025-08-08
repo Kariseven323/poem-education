@@ -3,6 +3,7 @@ import { Card, List, Input, Select, Button, Space, Typography, Tag, Pagination, 
 import { SearchOutlined, EyeOutlined, HeartOutlined, StarOutlined, BookOutlined } from '@ant-design/icons';
 import { guwenAPI } from '../utils/api';
 import { normalizeType } from '../utils/dataUtils';
+import PoemDetailModal from './PoemDetailModal';
 
 const { Search } = Input;
 const { Option } = Select;
@@ -11,6 +12,8 @@ const { Title, Text, Paragraph } = Typography;
 const PoemList = () => {
   const [poems, setPoems] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [dynasties, setDynasties] = useState([]);
+  const [types, setTypes] = useState(['诗', '词', '曲', '赋', '文']);
   const [pagination, setPagination] = useState({
     current: 1,
     pageSize: 20,
@@ -20,12 +23,51 @@ const PoemList = () => {
     keyword: '',
     dynasty: '',
     writer: '',
-    type: ''
+    type: '',
+    searchType: 'smart' // 搜索类型：smart(智能), fuzzy(模糊), exact(精确), content(内容)
   });
 
+  // 弹窗状态
+  const [modalVisible, setModalVisible] = useState(false);
+  const [selectedPoemId, setSelectedPoemId] = useState(null);
+
+  // 组件挂载时加载朝代列表
+  useEffect(() => {
+    loadDynasties();
+  }, []);
+
+  // 监听分页和筛选条件变化
   useEffect(() => {
     loadPoems();
-  }, [pagination.current, pagination.pageSize]);
+  }, [pagination.current, pagination.pageSize, filters.keyword, filters.dynasty, filters.writer, filters.type, filters.searchType]);
+
+  const loadDynasties = async () => {
+    try {
+      const response = await guwenAPI.getDynasties();
+      if (response.code === 200) {
+        setDynasties(response.data || []);
+      }
+    } catch (error) {
+      console.error('Failed to load dynasties:', error);
+      // 如果API失败，使用默认值
+      setDynasties(['唐代', '宋代', '元代', '明代', '清代', '汉代', '魏晋', '南北朝']);
+    }
+  };
+
+  const getSearchPlaceholder = () => {
+    switch (filters.searchType) {
+      case 'smart':
+        return '智能搜索：标题、内容、作者、类型等';
+      case 'fuzzy':
+        return '模糊搜索：支持部分匹配';
+      case 'content':
+        return '内容搜索：在诗词正文中搜索';
+      case 'exact':
+        return '精确搜索：完全匹配';
+      default:
+        return '搜索诗词标题、内容或作者';
+    }
+  };
 
   const loadPoems = async () => {
     setLoading(true);
@@ -35,13 +77,25 @@ const PoemList = () => {
         size: pagination.pageSize,
         ...filters
       };
-      
+
       // 移除空值
       Object.keys(params).forEach(key => {
         if (!params[key]) delete params[key];
       });
 
-      const response = await guwenAPI.getList(params);
+      let response;
+      // 如果有keyword，使用POST搜索接口；否则使用GET列表接口
+      if (filters.keyword) {
+        // 根据搜索类型添加额外参数
+        const searchParams = {
+          ...params,
+          searchType: filters.searchType
+        };
+        response = await guwenAPI.search(searchParams);
+      } else {
+        response = await guwenAPI.getList(params);
+      }
+
       if (response.code === 200) {
         setPoems(response.data?.list || []);
         setPagination(prev => ({
@@ -64,6 +118,10 @@ const PoemList = () => {
 
   const handleFilterChange = (key, value) => {
     setFilters(prev => ({ ...prev, [key]: value }));
+    // 当筛选条件变化时，重置到第1页
+    if (pagination.current !== 1) {
+      setPagination(prev => ({ ...prev, current: 1 }));
+    }
   };
 
   const handlePageChange = (page, pageSize) => {
@@ -74,8 +132,19 @@ const PoemList = () => {
     }));
   };
 
-  const dynasties = ['唐', '宋', '元', '明', '清', '汉', '魏晋', '南北朝'];
-  const types = ['诗', '词', '曲', '赋', '文'];
+  // 处理诗词点击
+  const handlePoemClick = (poemId) => {
+    setSelectedPoemId(poemId);
+    setModalVisible(true);
+  };
+
+  // 关闭弹窗
+  const handleModalClose = () => {
+    setModalVisible(false);
+    setSelectedPoemId(null);
+  };
+
+
 
   return (
     <div>
@@ -90,14 +159,27 @@ const PoemList = () => {
         {/* 搜索和筛选 */}
         <Space direction="vertical" style={{ width: '100%' }}>
           <Space wrap>
-            <Search
-              placeholder="搜索诗词标题、内容或作者"
-              style={{ width: 300 }}
-              value={filters.keyword}
-              onChange={(e) => handleFilterChange('keyword', e.target.value)}
-              onSearch={handleSearch}
-              enterButton={<SearchOutlined />}
-            />
+            <Space.Compact>
+              <Select
+                value={filters.searchType}
+                onChange={(value) => handleFilterChange('searchType', value)}
+                style={{ width: 100 }}
+                options={[
+                  { value: 'smart', label: '智能' },
+                  { value: 'fuzzy', label: '模糊' },
+                  { value: 'content', label: '内容' },
+                  { value: 'exact', label: '精确' }
+                ]}
+              />
+              <Search
+                placeholder={getSearchPlaceholder()}
+                style={{ width: 280 }}
+                value={filters.keyword}
+                onChange={(e) => handleFilterChange('keyword', e.target.value)}
+                onSearch={handleSearch}
+                enterButton={<SearchOutlined />}
+              />
+            </Space.Compact>
             
             <Select
               placeholder="选择朝代"
@@ -149,7 +231,7 @@ const PoemList = () => {
                 <Card
                   hoverable
                   className="poem-card"
-                  onClick={() => window.location.href = `/poems/${poem._id}`}
+                  onClick={() => handlePoemClick(poem.id)}
                   actions={[
                     <Space>
                       <EyeOutlined />
@@ -233,6 +315,13 @@ const PoemList = () => {
           />
         </div>
       )}
+
+      {/* 诗词详情弹窗 */}
+      <PoemDetailModal
+        visible={modalVisible}
+        onClose={handleModalClose}
+        poemId={selectedPoemId}
+      />
     </div>
   );
 };

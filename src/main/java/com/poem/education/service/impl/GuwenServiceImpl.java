@@ -53,21 +53,39 @@ public class GuwenServiceImpl implements GuwenService {
         logger.info("获取古文列表: page={}, size={}, dynasty={}, writer={}, type={}", 
                    page, size, dynasty, writer, type);
         
-        // 创建分页对象
-        Pageable pageable = PageRequest.of(page - 1, size, Sort.by(Sort.Direction.DESC, "createdAt"));
+        // 创建分页对象 - 使用_id排序确保稳定的分页结果
+        Pageable pageable = PageRequest.of(page - 1, size, Sort.by(Sort.Direction.ASC, "id"));
         
         Page<Guwen> guwenPage;
         
-        // 根据条件查询
-        if (StringUtils.hasText(dynasty) && StringUtils.hasText(writer)) {
-            guwenPage = guwenRepository.findByWriterAndDynasty(writer, dynasty, pageable);
-        } else if (StringUtils.hasText(dynasty)) {
+        // 根据条件查询 - 支持多条件组合
+        boolean hasWriter = StringUtils.hasText(writer);
+        boolean hasDynasty = StringUtils.hasText(dynasty);
+        boolean hasType = StringUtils.hasText(type);
+
+        if (hasWriter && hasDynasty && hasType) {
+            // 三个条件都有
+            guwenPage = guwenRepository.findByWriterRegexAndDynastyAndType(writer, dynasty, type, pageable);
+        } else if (hasWriter && hasDynasty) {
+            // 作者 + 朝代
+            guwenPage = guwenRepository.findByWriterRegexAndDynasty(writer, dynasty, pageable);
+        } else if (hasWriter && hasType) {
+            // 作者 + 类型
+            guwenPage = guwenRepository.findByWriterRegexAndType(writer, type, pageable);
+        } else if (hasDynasty && hasType) {
+            // 朝代 + 类型
+            guwenPage = guwenRepository.findByDynastyAndType(dynasty, type, pageable);
+        } else if (hasWriter) {
+            // 只有作者 - 使用模糊匹配
+            guwenPage = guwenRepository.findByWriterRegex(writer, pageable);
+        } else if (hasDynasty) {
+            // 只有朝代
             guwenPage = guwenRepository.findByDynasty(dynasty, pageable);
-        } else if (StringUtils.hasText(writer)) {
-            guwenPage = guwenRepository.findByWriter(writer, pageable);
-        } else if (StringUtils.hasText(type)) {
+        } else if (hasType) {
+            // 只有类型
             guwenPage = guwenRepository.findByType(type, pageable);
         } else {
+            // 没有条件
             guwenPage = guwenRepository.findAll(pageable);
         }
         
@@ -103,17 +121,68 @@ public class GuwenServiceImpl implements GuwenService {
         
         Page<Guwen> guwenPage;
         
-        // 如果有关键字，使用全文搜索
+        // 如果有关键字，根据搜索类型选择不同的搜索方法
         if (StringUtils.hasText(request.getKeyword())) {
-            guwenPage = guwenRepository.findByTextSearch(request.getKeyword(), pageable);
+            String searchType = request.getSearchType();
+            if (searchType == null) {
+                searchType = "smart"; // 默认使用智能搜索
+            }
+            String keyword = request.getKeyword();
+
+            switch (searchType) {
+                case "fuzzy":
+                    // 模糊搜索 - 支持标题、内容、作者的模糊匹配
+                    guwenPage = guwenRepository.findByKeywordFuzzySearch(keyword, pageable);
+                    break;
+                case "content":
+                    // 内容搜索 - 主要在正文中搜索
+                    guwenPage = guwenRepository.findByContentContainingIgnoreCase(keyword, pageable);
+                    break;
+                case "exact":
+                    // 精确搜索 - 使用MongoDB文本索引
+                    guwenPage = guwenRepository.findByTextSearch(keyword, pageable);
+                    break;
+                case "smart":
+                default:
+                    // 智能搜索 - 综合多种搜索策略
+                    guwenPage = guwenRepository.findBySmartSearch(keyword, pageable);
+                    break;
+            }
         } else {
-            // 使用高级搜索
-            guwenPage = guwenRepository.findByAdvancedSearch(
-                    request.getKeyword(), 
-                    request.getWriter(), 
-                    request.getDynasty(), 
-                    request.getType(), 
-                    pageable);
+            // 使用高级搜索 - 支持多条件组合
+            String writer = request.getWriter();
+            String dynasty = request.getDynasty();
+            String type = request.getType();
+
+            boolean hasWriter = StringUtils.hasText(writer);
+            boolean hasDynasty = StringUtils.hasText(dynasty);
+            boolean hasType = StringUtils.hasText(type);
+
+            if (hasWriter && hasDynasty && hasType) {
+                // 三个条件都有
+                guwenPage = guwenRepository.findByWriterRegexAndDynastyAndType(writer, dynasty, type, pageable);
+            } else if (hasWriter && hasDynasty) {
+                // 作者 + 朝代
+                guwenPage = guwenRepository.findByWriterRegexAndDynasty(writer, dynasty, pageable);
+            } else if (hasWriter && hasType) {
+                // 作者 + 类型
+                guwenPage = guwenRepository.findByWriterRegexAndType(writer, type, pageable);
+            } else if (hasDynasty && hasType) {
+                // 朝代 + 类型
+                guwenPage = guwenRepository.findByDynastyAndType(dynasty, type, pageable);
+            } else if (hasWriter) {
+                // 只有作者 - 使用模糊匹配
+                guwenPage = guwenRepository.findByWriterRegex(writer, pageable);
+            } else if (hasDynasty) {
+                // 只有朝代
+                guwenPage = guwenRepository.findByDynasty(dynasty, pageable);
+            } else if (hasType) {
+                // 只有类型
+                guwenPage = guwenRepository.findByType(type, pageable);
+            } else {
+                // 没有条件
+                guwenPage = guwenRepository.findAll(pageable);
+            }
         }
         
         // 转换为DTO
@@ -208,11 +277,13 @@ public class GuwenServiceImpl implements GuwenService {
     @Override
     public List<String> getAllTypes() {
         logger.info("获取所有类型列表");
-        
+
         List<Guwen> typeList = guwenRepository.findAllTypes();
-        
+
         return typeList.stream()
                 .map(Guwen::getType)
+                .filter(types -> types != null && !types.isEmpty())
+                .flatMap(List::stream)  // 展开List<String>为单个String
                 .filter(type -> type != null && !type.trim().isEmpty())
                 .distinct()
                 .sorted()

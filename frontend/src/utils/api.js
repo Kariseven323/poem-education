@@ -68,60 +68,93 @@ export const userAPI = {
 export const guwenAPI = {
   // 获取古文列表
   getList: (params) => api.get('/guwen', { params }),
-  
+
   // 获取古文详情
   getById: (id) => api.get(`/guwen/${id}`),
-  
+
   // 搜索古文
   search: (data) => api.post('/guwen/search', data),
-  
+
   // 获取热门古文
   getHot: (params) => api.get('/guwen/hot', { params }),
+
+  // 获取所有朝代列表
+  getDynasties: () => api.get('/guwen/dynasties'),
+
+  // 获取所有作者列表
+  getWriters: () => api.get('/guwen/writers'),
 };
 
 // 作者相关API
 export const writerAPI = {
   // 获取作者详情
   getById: (id) => api.get(`/writers/${id}`),
-  
+
   // 获取作者列表
   getList: (params) => api.get('/writers', { params }),
-  
+
   // 搜索作者
   search: (data) => api.post('/writers/search', data),
+
+  // 获取所有朝代列表
+  getDynasties: () => api.get('/writers/dynasties'),
 };
 
 // 名句相关API
 export const sentenceAPI = {
   // 获取名句列表
   getList: (params) => api.get('/sentences', { params }),
-  
+
   // 获取名句详情
   getById: (id) => api.get(`/sentences/${id}`),
-  
+
   // 搜索名句
   search: (data) => api.post('/sentences/search', data),
-  
+
   // 获取热门名句
   getHot: (params) => api.get('/sentences/hot', { params }),
+
+  // 获取所有朝代列表
+  getDynasties: () => api.get('/sentences/dynasties'),
 };
 
 // 评论相关API
 export const commentAPI = {
   // 获取评论列表
   getList: (params) => api.get('/comments', { params }),
-  
+
   // 创建评论
   create: (data) => api.post('/comments', data),
-  
+
   // 删除评论
   delete: (id) => api.delete(`/comments/${id}`),
-  
+
   // 点赞评论
   like: (id) => api.post(`/comments/${id}/like`),
-  
+
   // 取消点赞
   unlike: (id) => api.delete(`/comments/${id}/like`),
+};
+
+// 用户行为相关API
+export const userActionAPI = {
+  // 记录用户行为
+  recordAction: (data) => api.post('/actions', data),
+
+  // 取消用户行为
+  cancelAction: (params) => api.delete('/actions', { params }),
+
+  // 检查用户是否已执行某行为
+  hasAction: (params) => api.get('/actions/check', { params }),
+
+  // 获取用户行为列表
+  getUserActions: (params) => api.get('/actions/user', { params }),
+
+  // 获取目标的行为统计
+  getTargetStats: (params) => api.get('/actions/stats', { params }),
+
+  // 获取热门内容
+  getHotContent: (params) => api.get('/actions/hot', { params }),
 };
 
 export default api;

@@ -55,7 +55,13 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(BusinessException.class)
     @ResponseStatus(HttpStatus.OK)
     public Result<Void> handleBusinessException(BusinessException e, HttpServletRequest request) {
-        logger.warn("Business exception occurred: {} at {}", e.getMessage(), request.getRequestURI());
+        logger.error("=== 业务异常详细信息 ===");
+        logger.error("请求URL: {}", request.getRequestURI());
+        logger.error("请求方法: {}", request.getMethod());
+        logger.error("异常类型: {}", e.getClass().getSimpleName());
+        logger.error("错误码: {}", e.getCode());
+        logger.error("错误消息: {}", e.getMessage());
+        logger.error("异常堆栈: ", e);
         return Result.error(e.getCode(), e.getMessage());
     }
     

@@ -15,6 +15,7 @@ import org.springframework.data.mongodb.core.index.CompoundIndexes;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.mapping.Field;
+import org.bson.types.ObjectId;
 
 import javax.validation.constraints.*;
 import java.time.LocalDateTime;
@@ -46,9 +47,9 @@ public class Comment {
      * 目标ID
      * 必填字段，ObjectId类型
      */
-    @NotBlank(message = "目标ID不能为空")
+    @NotNull(message = "目标ID不能为空")
     @Field("targetId")
-    private String targetId;
+    private ObjectId targetId;
     
     /**
      * 目标类型
@@ -118,7 +119,7 @@ public class Comment {
      */
     @Indexed(name = "parentId_1")
     @Field("parentId")
-    private String parentId;
+    private ObjectId parentId;
     
     /**
      * 评论路径
@@ -148,7 +149,7 @@ public class Comment {
     
     // 构造函数
     public Comment(String targetId, String targetType, Long userId, String content, Integer status) {
-        this.targetId = targetId;
+        this.targetId = new ObjectId(targetId);
         this.targetType = targetType;
         this.userId = userId;
         this.content = content;
@@ -166,12 +167,16 @@ public class Comment {
         this.id = id;
     }
     
-    public String getTargetId() {
+    public ObjectId getTargetId() {
         return targetId;
     }
-    
-    public void setTargetId(String targetId) {
+
+    public void setTargetId(ObjectId targetId) {
         this.targetId = targetId;
+    }
+
+    public void setTargetId(String targetId) {
+        this.targetId = new ObjectId(targetId);
     }
     
     public String getTargetType() {
@@ -230,12 +235,16 @@ public class Comment {
         this.replyCount = replyCount;
     }
     
-    public String getParentId() {
+    public ObjectId getParentId() {
         return parentId;
     }
-    
-    public void setParentId(String parentId) {
+
+    public void setParentId(ObjectId parentId) {
         this.parentId = parentId;
+    }
+
+    public void setParentId(String parentId) {
+        this.parentId = parentId != null ? new ObjectId(parentId) : null;
     }
     
     public String getPath() {

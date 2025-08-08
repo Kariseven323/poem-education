@@ -1,12 +1,3 @@
-// {{RIPER-5+SMART-6:
-//   Action: "Parallel-Added"
-//   Task_ID: "b4a42fdc-2d03-4831-9d30-9278970f029a"
-//   Timestamp: "2025-08-07T12:00:00+08:00"
-//   Authoring_Subagent: "PM-快速模式"
-//   Principle_Applied: "Service实现最佳实践，层级评论path设计"
-//   Quality_Check: "编译通过，业务逻辑完整。"
-// }}
-// {{START_MODIFICATIONS}}
 package com.poem.education.service.impl;
 
 import com.poem.education.dto.request.CommentRequest;
@@ -30,6 +21,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
+import org.bson.types.ObjectId;
 
 import java.time.LocalDateTime;
 import java.util.*;
@@ -54,44 +46,51 @@ public class CommentServiceImpl implements CommentService {
     private UserRepository userRepository;
     
     @Override
-    public PageResult<CommentDTO> getCommentsByTarget(String targetId, String targetType, Integer page, Integer size) {
-        logger.info("获取评论列表: targetId={}, targetType={}, page={}, size={}", 
-                   targetId, targetType, page, size);
-        
-        // 创建分页对象，按path排序实现层级显示
-        Pageable pageable = PageRequest.of(page - 1, size, Sort.by(Sort.Direction.ASC, "path"));
-        
-        Page<Comment> commentPage = commentRepository.findByTargetIdAndTargetTypeAndStatus(
-                targetId, targetType, 1, pageable);
-        
-        // 转换为DTO
-        List<CommentDTO> commentDTOList = commentPage.getContent().stream()
-                .map(this::convertToDTO)
-                .collect(Collectors.toList());
-        
-        // 构建树形结构
-        List<CommentDTO> treeComments = buildCommentTree(commentDTOList);
-        
-        return PageResult.of(treeComments, page, size, commentPage.getTotalElements());
-    }
-    
-    @Override
     @Transactional
     public CommentDTO createComment(Long userId, CommentRequest request) {
-        logger.info("发表评论: userId={}, request={}", userId, request);
+        logger.info("=== CommentService.createComment 开始 ===");
+        logger.info("输入参数: userId={}, request={}", userId, request);
         
         // 验证用户是否存在
+        logger.info("验证用户是否存在: userId={}", userId);
         Optional<User> userOptional = userRepository.findById(userId);
         if (!userOptional.isPresent()) {
+            logger.error("用户不存在: userId={}", userId);
             throw new BusinessException(ErrorCode.NOT_FOUND, "用户不存在");
+        }
+        logger.info("用户验证成功: userId={}", userId);
+        
+        // 验证并转换targetId为有效的ObjectId格式
+        logger.info("开始验证targetId: {}", request.getTargetId());
+        ObjectId targetId = validateAndConvertObjectId(request.getTargetId(), "目标ID");
+        logger.info("targetId验证成功，转换后: {}", targetId);
+
+        // 验证并转换parentId为有效的ObjectId格式（如果存在）
+        ObjectId parentId = null;
+        logger.info("🔍 parentId原始值检查: value='{}', type={}, hasText={}",
+                   request.getParentId(),
+                   request.getParentId() != null ? request.getParentId().getClass().getSimpleName() : "null",
+                   StringUtils.hasText(request.getParentId()));
+
+        if (StringUtils.hasText(request.getParentId())) {
+            logger.info("✅ 开始验证parentId: '{}'", request.getParentId());
+            try {
+                parentId = validateAndConvertObjectId(request.getParentId(), "父评论ID");
+                logger.info("✅ parentId验证成功，转换后: {}", parentId);
+            } catch (Exception e) {
+                logger.error("❌ parentId验证失败: {}", e.getMessage(), e);
+                throw e; // 重新抛出异常
+            }
+        } else {
+            logger.warn("⚠️ parentId为空或无效，将创建顶级评论: parentId='{}'", request.getParentId());
         }
         
         Comment comment = new Comment();
-        comment.setTargetId(request.getTargetId());
+        comment.setTargetId(targetId);
         comment.setTargetType(request.getTargetType());
         comment.setUserId(userId);
         comment.setContent(request.getContent());
-        comment.setParentId(request.getParentId());
+        comment.setParentId(parentId);
         comment.setStatus(1);
         comment.setLikeCount(0);
         comment.setReplyCount(0);
@@ -99,19 +98,19 @@ public class CommentServiceImpl implements CommentService {
         comment.setUpdatedAt(LocalDateTime.now());
         
         // 计算层级和路径
-        if (StringUtils.hasText(request.getParentId())) {
+        if (parentId != null) {
             // 回复评论
-            Optional<Comment> parentOptional = commentRepository.findById(request.getParentId());
+            Optional<Comment> parentOptional = commentRepository.findById(parentId.toHexString());
             if (!parentOptional.isPresent()) {
                 throw new BusinessException(ErrorCode.NOT_FOUND, "父评论不存在");
             }
-            
+
             Comment parent = parentOptional.get();
             comment.setLevel(parent.getLevel() + 1);
-            comment.setPath(calculateCommentPath(request.getParentId()));
-            
+            comment.setPath(calculateCommentPath(parentId.toHexString()));
+
             // 更新父评论的回复数
-            updateReplyCount(request.getParentId(), 1);
+            updateReplyCount(parentId.toHexString(), 1);
         } else {
             // 顶级评论
             comment.setLevel(1);
@@ -127,7 +126,37 @@ public class CommentServiceImpl implements CommentService {
             savedComment = commentRepository.save(savedComment);
         }
         
+        logger.info("评论创建成功: {}", savedComment.getId());
         return convertToDTO(savedComment);
+    }
+    
+    @Override
+    public PageResult<CommentDTO> getCommentsByTarget(String targetId, String targetType, Integer page, Integer size) {
+        logger.info("获取评论列表: targetId={}, targetType={}, page={}, size={}", targetId, targetType, page, size);
+
+        // 验证并转换targetId为ObjectId
+        ObjectId targetObjectId = validateAndConvertObjectId(targetId, "targetId");
+        logger.info("转换后的ObjectId: {}", targetObjectId);
+
+        Pageable pageable = PageRequest.of(page - 1, size, Sort.by(Sort.Direction.DESC, "createdAt"));
+        Page<Comment> commentPage = commentRepository.findByTargetIdAndTargetTypeAndStatus(targetObjectId, targetType, 1, pageable);
+
+        logger.info("查询结果: 找到{}条评论", commentPage.getTotalElements());
+
+        List<CommentDTO> commentDTOs = commentPage.getContent().stream()
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
+
+        // 构建评论树结构
+        List<CommentDTO> commentTree = buildCommentTree(commentDTOs);
+        logger.info("构建评论树完成: 顶级评论{}条，总评论{}条", commentTree.size(), commentDTOs.size());
+
+        return new PageResult<CommentDTO>(
+                commentTree,
+                page,
+                size,
+                commentPage.getTotalElements()
+        );
     }
     
     @Override
@@ -153,8 +182,6 @@ public class CommentServiceImpl implements CommentService {
         }
         
         Comment comment = commentOptional.get();
-        
-        // 验证权限
         if (!comment.getUserId().equals(userId)) {
             throw new BusinessException(ErrorCode.FORBIDDEN, "无权限删除此评论");
         }
@@ -163,11 +190,6 @@ public class CommentServiceImpl implements CommentService {
         comment.setStatus(0);
         comment.setUpdatedAt(LocalDateTime.now());
         commentRepository.save(comment);
-        
-        // 更新父评论的回复数
-        if (StringUtils.hasText(comment.getParentId())) {
-            updateReplyCount(comment.getParentId(), -1);
-        }
     }
     
     @Override
@@ -197,41 +219,51 @@ public class CommentServiceImpl implements CommentService {
         Pageable pageable = PageRequest.of(page - 1, size, Sort.by(Sort.Direction.DESC, "createdAt"));
         Page<Comment> commentPage = commentRepository.findByUserIdAndStatus(userId, 1, pageable);
         
-        List<CommentDTO> commentDTOList = commentPage.getContent().stream()
+        List<CommentDTO> commentDTOs = commentPage.getContent().stream()
                 .map(this::convertToDTO)
                 .collect(Collectors.toList());
         
-        return PageResult.of(commentDTOList, page, size, commentPage.getTotalElements());
+        return new PageResult<CommentDTO>(
+                commentDTOs,
+                page,
+                size,
+                commentPage.getTotalElements()
+        );
     }
     
     @Override
     public List<CommentDTO> getHotComments(String targetId, String targetType, Integer limit) {
         logger.info("获取热门评论: targetId={}, targetType={}, limit={}", targetId, targetType, limit);
-        
+
+        // 验证并转换targetId为ObjectId
+        ObjectId targetObjectId = validateAndConvertObjectId(targetId, "targetId");
+
         Pageable pageable = PageRequest.of(0, limit, Sort.by(Sort.Direction.DESC, "likeCount"));
-        Page<Comment> commentPage = commentRepository.findByTargetIdAndTargetTypeAndStatus(
-                targetId, targetType, 1, pageable);
-        
+        Page<Comment> commentPage = commentRepository.findByTargetIdAndTargetTypeAndStatus(targetObjectId, targetType, 1, pageable);
+
         return commentPage.getContent().stream()
                 .map(this::convertToDTO)
                 .collect(Collectors.toList());
     }
-    
+
     @Override
     public List<CommentDTO> getLatestComments(String targetId, String targetType, Integer limit) {
         logger.info("获取最新评论: targetId={}, targetType={}, limit={}", targetId, targetType, limit);
-        
+
+        // 验证并转换targetId为ObjectId
+        ObjectId targetObjectId = validateAndConvertObjectId(targetId, "targetId");
+
         Pageable pageable = PageRequest.of(0, limit, Sort.by(Sort.Direction.DESC, "createdAt"));
-        Page<Comment> commentPage = commentRepository.findByTargetIdAndTargetTypeAndStatus(
-                targetId, targetType, 1, pageable);
-        
+        Page<Comment> commentPage = commentRepository.findByTargetIdAndTargetTypeAndStatus(targetObjectId, targetType, 1, pageable);
+
         return commentPage.getContent().stream()
                 .map(this::convertToDTO)
                 .collect(Collectors.toList());
     }
-    
+
     @Override
     public long getCommentCount(String targetId, String targetType) {
+        logger.info("统计评论数量: targetId={}, targetType={}", targetId, targetType);
         return commentRepository.countByTargetIdAndTargetTypeAndStatus(targetId, targetType, 1);
     }
     
@@ -241,22 +273,17 @@ public class CommentServiceImpl implements CommentService {
             return new ArrayList<>();
         }
         
-        // 按层级分组
-        Map<Integer, List<CommentDTO>> levelMap = comments.stream()
-                .collect(Collectors.groupingBy(CommentDTO::getLevel));
-        
         // 构建父子关系映射
-        Map<String, List<CommentDTO>> parentChildMap = new HashMap<>();
+        Map<String, List<CommentDTO>> childrenMap = new HashMap<>();
         for (CommentDTO comment : comments) {
-            if (StringUtils.hasText(comment.getParentId())) {
-                parentChildMap.computeIfAbsent(comment.getParentId(), k -> new ArrayList<>())
-                        .add(comment);
+            if (comment.getParentId() != null) {
+                childrenMap.computeIfAbsent(comment.getParentId(), k -> new ArrayList<>()).add(comment);
             }
         }
         
         // 设置子评论
         for (CommentDTO comment : comments) {
-            List<CommentDTO> children = parentChildMap.get(comment.getId());
+            List<CommentDTO> children = childrenMap.get(comment.getId());
             if (children != null) {
                 comment.setChildren(children);
             }
@@ -270,19 +297,18 @@ public class CommentServiceImpl implements CommentService {
     
     @Override
     public String calculateCommentPath(String parentId) {
-        if (!StringUtils.hasText(parentId)) {
-            return null;
-        }
-        
         Optional<Comment> parentOptional = commentRepository.findById(parentId);
         if (!parentOptional.isPresent()) {
-            return null;
+            return parentId;
         }
         
         Comment parent = parentOptional.get();
+        if (parent.getPath() == null) {
+            return parentId;
+        }
         
-        // 获取同级评论数量，用于生成路径
-        long siblingCount = commentRepository.countByParentIdAndStatus(parentId, 1);
+        // 计算同级评论数量
+        long siblingCount = commentRepository.countByParentId(parentId);
         
         return parent.getPath() + "." + (siblingCount + 1);
     }
@@ -297,34 +323,87 @@ public class CommentServiceImpl implements CommentService {
         Optional<Comment> parentOptional = commentRepository.findById(parentId);
         if (parentOptional.isPresent()) {
             Comment parent = parentOptional.get();
-            parent.setReplyCount(Math.max(0, parent.getReplyCount() + increment));
+            int newCount = Math.max(0, parent.getReplyCount() + increment);
+            parent.setReplyCount(newCount);
             parent.setUpdatedAt(LocalDateTime.now());
             commentRepository.save(parent);
         }
     }
     
     @Override
-    @Transactional
     public void updateLikeCount(String commentId, int increment) {
         Optional<Comment> commentOptional = commentRepository.findById(commentId);
         if (commentOptional.isPresent()) {
             Comment comment = commentOptional.get();
-            comment.setLikeCount(Math.max(0, comment.getLikeCount() + increment));
+            int newCount = Math.max(0, comment.getLikeCount() + increment);
+            comment.setLikeCount(newCount);
             comment.setUpdatedAt(LocalDateTime.now());
             commentRepository.save(comment);
         }
     }
     
     /**
+     * 验证并转换ObjectId字符串
+     * 确保字符串是有效的ObjectId格式，并返回ObjectId对象
+     *
+     * @param objectIdStr ObjectId字符串
+     * @param fieldName 字段名称（用于错误信息）
+     * @return ObjectId对象
+     * @throws BusinessException 如果ObjectId格式无效
+     */
+    private ObjectId validateAndConvertObjectId(String objectIdStr, String fieldName) {
+        logger.info("=== validateAndConvertObjectId 开始 ===");
+        logger.info("输入参数: fieldName={}, objectIdStr={}", fieldName, objectIdStr);
+        
+        if (objectIdStr == null || objectIdStr.trim().isEmpty()) {
+            logger.error("ObjectId为空: fieldName={}, objectIdStr={}", fieldName, objectIdStr);
+            throw new BusinessException(ErrorCode.BAD_REQUEST, fieldName + "不能为空");
+        }
+        
+        try {
+            // 验证ObjectId格式并创建ObjectId对象
+            logger.info("尝试创建ObjectId: {}", objectIdStr.trim());
+            ObjectId objectId = new ObjectId(objectIdStr.trim());
+            logger.info("ObjectId验证成功: 输入={}, 输出={}", objectIdStr, objectId);
+            return objectId;
+        } catch (IllegalArgumentException e) {
+            logger.error("无效的ObjectId格式: {} = {}", fieldName, objectIdStr, e);
+            logger.error("异常详情: {}", e.getMessage());
+            throw new BusinessException(ErrorCode.BAD_REQUEST, 
+                fieldName + "格式无效，必须是24位十六进制字符串");
+        } catch (Exception e) {
+            logger.error("ObjectId转换时发生未知异常: {} = {}", fieldName, objectIdStr, e);
+            throw new BusinessException(ErrorCode.BAD_REQUEST, 
+                fieldName + "处理失败: " + e.getMessage());
+        }
+    }
+    
+    /**
      * 将Comment实体转换为CommentDTO
-     * 
+     *
      * @param comment Comment实体
      * @return CommentDTO
      */
     private CommentDTO convertToDTO(Comment comment) {
+        logger.debug("🔍 转换评论实体到DTO: commentId={}, parentId={}",
+                    comment.getId(), comment.getParentId());
+
         CommentDTO commentDTO = new CommentDTO();
         BeanUtils.copyProperties(comment, commentDTO);
-        
+
+        // 手动处理 ObjectId 字段转换
+        if (comment.getTargetId() != null) {
+            commentDTO.setTargetId(comment.getTargetId().toHexString());
+        }
+
+        if (comment.getParentId() != null) {
+            String parentIdStr = comment.getParentId().toHexString();
+            commentDTO.setParentId(parentIdStr);
+            logger.debug("✅ 设置 parentId: {} -> {}", comment.getParentId(), parentIdStr);
+        } else {
+            logger.debug("ℹ️ parentId 为空，这是顶级评论");
+        }
+
         // 设置用户信息
         if (comment.getUserId() != null) {
             Optional<User> userOptional = userRepository.findById(comment.getUserId());
@@ -335,8 +414,8 @@ public class CommentServiceImpl implements CommentService {
                 commentDTO.setUserInfo(userInfo);
             }
         }
-        
+
+        logger.debug("📤 转换完成: commentDTO.parentId={}", commentDTO.getParentId());
         return commentDTO;
     }
 }
-// {{END_MODIFICATIONS}}

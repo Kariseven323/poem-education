@@ -143,7 +143,7 @@ const Home = () => {
                 >
                   <List.Item.Meta
                     title={
-                      <a href={`/poems/${poem._id}`}>
+                      <a href={`/poems/${poem.id}`}>
                         {poem.title}
                       </a>
                     }

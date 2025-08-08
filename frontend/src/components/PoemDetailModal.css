@@ -1,0 +1,499 @@
+/* {{RIPER-5+SMART-6:
+   Action: "Parallel-Added"
+   Task_ID: "poem-detail-modal-styles"
+   Timestamp: "2025-08-07T19:36:53+08:00"
+   Authoring_Subagent: "react-frontend-expert"
+   Principle_Applied: "DRY (Don't Repeat Yourself)"
+   Quality_Check: "样式完整，支持独立滚动和响应式布局。"
+}} */
+/* {{START_MODIFICATIONS}} */
+
+.poem-detail-modal .ant-modal-content {
+  padding: 0;
+  overflow: hidden;
+}
+
+.poem-detail-modal .ant-modal-header {
+  border-bottom: none;
+  padding: 16px 24px 0;
+}
+
+.poem-detail-modal .ant-modal-body {
+  padding: 24px;
+  height: 75vh;
+  max-height: 800px;
+  min-height: 600px;
+  overflow: hidden;
+}
+
+.poem-detail-modal .ant-modal-close {
+  top: 16px;
+  right: 16px;
+}
+
+/* 诗词内容区域 */
+.poem-content-section {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.poem-content-section .ant-card {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.poem-content-section .ant-card-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 16px;
+}
+
+/* 整个诗词内容滚动区域 */
+.poem-all-content-scroll {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-right: 8px;
+  max-height: calc(75vh - 100px);
+  min-height: 400px;
+}
+
+.poem-all-content-scroll::-webkit-scrollbar {
+  width: 8px;
+}
+
+.poem-all-content-scroll::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+.poem-all-content-scroll::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 4px;
+}
+
+.poem-all-content-scroll::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
+
+/* 旧的poem-details-scroll样式已移除，现在使用poem-all-content-scroll */
+
+/* 评论区域 */
+.comments-section {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.comments-section .ant-card {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.comments-section .ant-card-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 16px;
+}
+
+.comments-scroll {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-right: 8px;
+  margin-bottom: 16px;
+  max-height: calc(70vh - 200px);
+  min-height: 200px;
+}
+
+.comments-scroll::-webkit-scrollbar {
+  width: 8px;
+}
+
+.comments-scroll::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+.comments-scroll::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 4px;
+}
+
+.comments-scroll::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
+
+/* 评论列表项 */
+.comments-scroll .ant-list-item {
+  transition: background-color 0.2s;
+}
+
+.comments-scroll .ant-list-item:hover {
+  background-color: #fafafa;
+  border-radius: 6px;
+}
+
+.comments-scroll .ant-list-item-meta-avatar {
+  margin-right: 8px;
+}
+
+.comments-scroll .ant-list-item-meta-content {
+  flex: 1;
+}
+
+/* 新的评论样式 - 修复竖向布局问题 */
+.comment-item {
+  display: flex;
+  padding: 16px 0;
+  border-bottom: 1px solid #f0f0f0;
+  transition: background-color 0.2s;
+}
+
+.comment-item:hover {
+  background-color: #fafafa;
+  border-radius: 8px;
+  margin: 0 -8px;
+  padding: 16px 8px;
+}
+
+.comment-item:last-child {
+  border-bottom: none;
+}
+
+.comment-avatar {
+  margin-right: 12px;
+  flex-shrink: 0;
+}
+
+.comment-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.comment-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.comment-text {
+  margin-bottom: 8px;
+  word-wrap: break-word;
+}
+
+.comment-actions {
+  margin-top: 4px;
+}
+
+.comment-actions .ant-btn {
+  padding: 0 8px;
+  height: 24px;
+  border: none;
+  box-shadow: none;
+}
+
+.comment-actions .ant-btn:hover {
+  color: #1890ff;
+  background-color: #f0f6ff;
+}
+
+/* 评论输入区域 */
+.comment-input-section {
+  border-top: 1px solid #f0f0f0;
+  padding-top: 16px;
+  margin-top: auto;
+}
+
+.comment-input-wrapper {
+  display: flex;
+  gap: 12px;
+}
+
+.current-user-avatar {
+  flex-shrink: 0;
+}
+
+.comment-input-container {
+  flex: 1;
+}
+
+.comment-submit-area {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 12px;
+}
+
+.comment-tips {
+  flex: 1;
+}
+
+/* 回复功能样式 */
+.reply-input-section {
+  margin-top: 12px;
+  padding: 12px;
+  background: #fafafa;
+  border-radius: 8px;
+  border: 1px solid #f0f0f0;
+}
+
+.reply-reference {
+  background: #f5f5f5;
+  padding: 8px 12px;
+  border-radius: 6px;
+  margin-bottom: 8px;
+  font-size: 12px;
+  color: #666;
+  border-left: 3px solid #1890ff;
+}
+
+.reply-reference-main {
+  background: #f0f8ff;
+  border: 1px solid #d6e4ff;
+  border-radius: 6px;
+  padding: 8px 12px;
+  margin-bottom: 8px;
+  font-size: 12px;
+  border-left: 3px solid #1890ff;
+}
+
+.reply-input-area {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+}
+
+.reply-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.reply-actions .ant-btn {
+  min-width: 60px;
+  height: 28px;
+  font-size: 12px;
+}
+
+/* 回复引用样式动画 */
+.reply-reference,
+.reply-reference-main {
+  animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* 加载和空状态 */
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 0;
+}
+
+.empty-comments {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 0;
+}
+
+/* 评论头部 */
+.comments-header {
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.comment-count {
+  margin-left: auto;
+}
+
+/* 点赞区域 */
+.poem-like-section {
+  background: #fafafa;
+  margin: 0 -24px -24px;
+  padding: 16px 24px 24px;
+}
+
+.poem-like-section .ant-btn-lg {
+  height: 48px;
+  padding: 0 32px;
+  font-size: 16px;
+  border-radius: 24px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+}
+
+.poem-like-section .ant-btn-lg:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* 点赞按钮动画 */
+.poem-like-section .ant-btn-lg .anticon {
+  transition: all 0.3s ease;
+}
+
+.poem-like-section .ant-btn-lg:hover .anticon {
+  transform: scale(1.1);
+}
+
+/* 诗词内容样式 */
+.poem-content {
+  color: #333;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+/* 标签样式 */
+.poem-detail-modal .ant-tag {
+  border-radius: 12px;
+  padding: 2px 8px;
+  font-size: 12px;
+}
+
+/* 响应式设计 */
+@media (max-width: 1200px) {
+  .poem-detail-modal .ant-modal-content {
+    margin: 20px;
+  }
+}
+
+@media (max-width: 768px) {
+  .poem-detail-modal {
+    width: 95% !important;
+  }
+  
+  .poem-detail-modal .ant-modal-body {
+    padding: 16px;
+    height: 80vh;
+  }
+  
+  .poem-detail-modal .ant-row {
+    flex-direction: column;
+  }
+  
+  .poem-detail-modal .ant-col {
+    width: 100% !important;
+    margin-bottom: 16px;
+  }
+  
+  .poem-detail-modal .ant-col:last-child {
+    margin-bottom: 0;
+  }
+  
+  .poem-content-section,
+  .comments-section {
+    height: 300px;
+  }
+}
+
+/* 加载状态 */
+.poem-detail-modal .ant-spin-container {
+  min-height: 200px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* 空状态 */
+.poem-detail-modal .ant-empty {
+  margin: 40px 0;
+}
+
+/* 评论输入框样式 */
+.comments-section .ant-input {
+  border-radius: 6px;
+  resize: none;
+}
+
+.comments-section .ant-btn {
+  border-radius: 6px;
+}
+
+/* 诗词标题样式 */
+.poem-detail-modal h2 {
+  font-family: 'KaiTi', '楷体', serif;
+  font-weight: 600;
+}
+
+/* 诗词详情段落样式 */
+.poem-details-scroll .ant-typography {
+  margin-bottom: 16px;
+}
+
+.poem-details-scroll h4 {
+  color: #1890ff;
+  font-size: 16px;
+  margin-bottom: 8px;
+  border-left: 3px solid #1890ff;
+  padding-left: 8px;
+}
+
+/* 滚动条美化 - Firefox */
+.poem-all-content-scroll,
+.comments-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: #888 #f1f1f1;
+}
+
+/* 确保滚动区域可见 */
+.poem-all-content-scroll {
+  border: 1px solid #f0f0f0;
+  border-radius: 6px;
+  background: #fafafa;
+}
+
+.comments-scroll {
+  border: 1px solid #f0f0f0;
+  border-radius: 6px;
+}
+
+/* 动画效果 */
+.poem-detail-modal .ant-modal-content {
+  animation: modalFadeIn 0.3s ease-out;
+}
+
+@keyframes modalFadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* 评论时间样式 */
+.comments-scroll .ant-typography {
+  color: #999;
+  font-size: 12px;
+}
+
+/* 卡片阴影 */
+.poem-detail-modal .ant-card {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  border-radius: 8px;
+}
+
+/* {{END_MODIFICATIONS}} */

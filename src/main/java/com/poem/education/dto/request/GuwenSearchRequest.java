@@ -75,6 +75,12 @@ public class GuwenSearchRequest {
      * 可选值：asc、desc
      */
     private String sortDir = "desc";
+
+    /**
+     * 搜索类型
+     * 可选值：smart(智能搜索)、fuzzy(模糊搜索)、content(内容搜索)、exact(精确搜索)
+     */
+    private String searchType = "smart";
     
     // 默认构造函数
     public GuwenSearchRequest() {
@@ -150,6 +156,14 @@ public class GuwenSearchRequest {
     
     public void setSortDir(String sortDir) {
         this.sortDir = sortDir;
+    }
+
+    public String getSearchType() {
+        return searchType;
+    }
+
+    public void setSearchType(String searchType) {
+        this.searchType = searchType;
     }
     
     @Override

@@ -78,15 +78,31 @@ public class CommentController {
      * @return 评论详情
      */
     @PostMapping
-    public Result<CommentDTO> createComment(HttpServletRequest request, 
+    public Result<CommentDTO> createComment(HttpServletRequest request,
                                           @Valid @RequestBody CommentRequest commentRequest) {
-        
-        Long userId = getCurrentUserId(request);
-        logger.info("发表评论: userId={}, request={}", userId, commentRequest);
-        
-        CommentDTO commentDTO = commentService.createComment(userId, commentRequest);
-        
-        return Result.success(commentDTO, "发表评论成功");
+
+        logger.info("=== 开始处理评论创建请求 ===");
+        logger.info("请求URL: {}", request.getRequestURL());
+        logger.info("请求方法: {}", request.getMethod());
+        logger.info("Content-Type: {}", request.getHeader("Content-Type"));
+        logger.info("Authorization: {}", request.getHeader("Authorization"));
+        logger.info("请求体: {}", commentRequest);
+
+        try {
+            Long userId = getCurrentUserId(request);
+            logger.info("获取用户ID成功: userId={}", userId);
+
+            logger.info("调用服务层创建评论: userId={}, request={}", userId, commentRequest);
+            CommentDTO commentDTO = commentService.createComment(userId, commentRequest);
+            logger.info("评论创建成功: {}", commentDTO);
+
+            return Result.success(commentDTO, "发表评论成功");
+        } catch (Exception e) {
+            logger.error("评论创建失败: ", e);
+            logger.error("异常类型: {}", e.getClass().getSimpleName());
+            logger.error("异常消息: {}", e.getMessage());
+            throw e;
+        }
     }
     
     /**

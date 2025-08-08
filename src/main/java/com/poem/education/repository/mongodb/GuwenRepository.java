@@ -9,15 +9,16 @@
 // {{START_MODIFICATIONS}}
 package com.poem.education.repository.mongodb;
 
-import com.poem.education.entity.mongodb.Guwen;
+import java.util.List;
+import java.util.Optional;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.data.mongodb.repository.Query;
 import org.springframework.stereotype.Repository;
 
-import java.util.List;
-import java.util.Optional;
+import com.poem.education.entity.mongodb.Guwen;
 
 /**
  * 古文Repository接口
@@ -161,13 +162,62 @@ public interface GuwenRepository extends MongoRepository<Guwen, String> {
     /**
      * 全文搜索古文
      * 使用MongoDB的文本索引进行搜索
-     * 
+     *
      * @param keyword 搜索关键字
      * @param pageable 分页参数
      * @return 古文分页列表
      */
     @Query("{ $text: { $search: ?0 } }")
     Page<Guwen> findByTextSearch(String keyword, Pageable pageable);
+
+    /**
+     * 增强的模糊搜索 - 支持标题、内容、作者的模糊匹配
+     *
+     * @param keyword 搜索关键字
+     * @param pageable 分页参数
+     * @return 古文分页列表
+     */
+    @Query("{ $or: [ " +
+           "{ 'title': { $regex: ?0, $options: 'i' } }, " +
+           "{ 'content': { $regex: ?0, $options: 'i' } }, " +
+           "{ 'writer': { $regex: ?0, $options: 'i' } }, " +
+           "{ 'remark': { $regex: ?0, $options: 'i' } }, " +
+           "{ 'shangxi': { $regex: ?0, $options: 'i' } }, " +
+           "{ 'translation': { $regex: ?0, $options: 'i' } } " +
+           "] }")
+    Page<Guwen> findByKeywordFuzzySearch(String keyword, Pageable pageable);
+
+    /**
+     * 按类型模糊搜索
+     * 注意：type字段是字符串数组，使用$regex直接匹配数组元素
+     *
+     * @param type 类型关键字
+     * @param pageable 分页参数
+     * @return 古文分页列表
+     */
+    @Query("{ 'type': { $regex: ?0, $options: 'i' } }")
+    Page<Guwen> findByTypeFuzzySearch(String type, Pageable pageable);
+
+    /**
+     * 智能搜索 - 综合多种搜索策略
+     * 支持标题、内容、作者、类型的智能匹配
+     * 注意：type字段是字符串数组，使用$regex直接匹配数组元素
+     *
+     * @param keyword 搜索关键字
+     * @param pageable 分页参数
+     * @return 古文分页列表
+     */
+    @Query("{ $or: [ " +
+           "{ 'title': { $regex: ?0, $options: 'i' } }, " +
+           "{ 'content': { $regex: ?0, $options: 'i' } }, " +
+           "{ 'writer': { $regex: ?0, $options: 'i' } }, " +
+           "{ 'type': { $regex: ?0, $options: 'i' } }, " +
+           "{ 'remark': { $regex: ?0, $options: 'i' } }, " +
+           "{ 'shangxi': { $regex: ?0, $options: 'i' } } " +
+           "] }")
+    Page<Guwen> findBySmartSearch(String keyword, Pageable pageable);
+
+
     
     /**
      * 高级搜索古文
@@ -180,13 +230,61 @@ public interface GuwenRepository extends MongoRepository<Guwen, String> {
      * @param pageable 分页参数
      * @return 古文分页列表
      */
-    @Query("{ $and: [ " +
-           "{ $or: [ { 'title': { $regex: ?0, $options: 'i' } }, { 'title': { $exists: false } } ] }, " +
-           "{ $or: [ { 'writer': { $regex: ?1, $options: 'i' } }, { 'writer': { $exists: false } } ] }, " +
-           "{ $or: [ { 'dynasty': ?2 }, { 'dynasty': { $exists: false } } ] }, " +
-           "{ $or: [ { 'type': ?3 }, { 'type': { $exists: false } } ] } " +
-           "] }")
-    Page<Guwen> findByAdvancedSearch(String title, String writer, String dynasty, String type, Pageable pageable);
+    /**
+     * 根据作者和朝代查找古文列表 - 支持模糊匹配
+     *
+     * @param writer 作者（支持模糊匹配）
+     * @param dynasty 朝代（精确匹配）
+     * @param pageable 分页参数
+     * @return 古文分页列表
+     */
+    @Query("{ 'writer': { $regex: ?0, $options: 'i' }, 'dynasty': ?1 }")
+    Page<Guwen> findByWriterRegexAndDynasty(String writer, String dynasty, Pageable pageable);
+
+    /**
+     * 根据作者和类型查找古文列表 - 支持模糊匹配
+     * 注意：type字段是数组，需要使用数组匹配语法
+     *
+     * @param writer 作者（支持模糊匹配）
+     * @param type 类型（精确匹配）
+     * @param pageable 分页参数
+     * @return 古文分页列表
+     */
+    @Query("{ 'writer': { $regex: ?0, $options: 'i' }, 'type': { $in: [?1] } }")
+    Page<Guwen> findByWriterRegexAndType(String writer, String type, Pageable pageable);
+
+    /**
+     * 根据朝代和类型查找古文列表
+     *
+     * @param dynasty 朝代（精确匹配）
+     * @param type 类型（精确匹配）
+     * @param pageable 分页参数
+     * @return 古文分页列表
+     */
+    Page<Guwen> findByDynastyAndType(String dynasty, String type, Pageable pageable);
+
+    /**
+     * 根据作者、朝代和类型查找古文列表 - 支持作者模糊匹配
+     * 注意：type字段是数组，需要使用数组匹配语法
+     *
+     * @param writer 作者（支持模糊匹配）
+     * @param dynasty 朝代（精确匹配）
+     * @param type 类型（精确匹配）
+     * @param pageable 分页参数
+     * @return 古文分页列表
+     */
+    @Query("{ 'writer': { $regex: ?0, $options: 'i' }, 'dynasty': ?1, 'type': { $in: [?2] } }")
+    Page<Guwen> findByWriterRegexAndDynastyAndType(String writer, String dynasty, String type, Pageable pageable);
+
+    /**
+     * 根据作者模糊查询古文 - 改进版
+     *
+     * @param writer 作者关键字
+     * @param pageable 分页参数
+     * @return 古文分页列表
+     */
+    @Query("{ 'writer': { $regex: ?0, $options: 'i' } }")
+    Page<Guwen> findByWriterRegex(String writer, Pageable pageable);
     
     /**
      * 查找随机古文

@@ -9,7 +9,8 @@
 // {{START_MODIFICATIONS}}
 package com.poem.education.config;
 
-import com.poem.education.security.JwtAuthenticationFilter;
+import java.util.Arrays;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -24,7 +25,7 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
-import java.util.Arrays;
+import com.poem.education.security.JwtAuthenticationFilter;
 
 /**
  * Spring Security配置类
@@ -99,8 +100,8 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
             .antMatchers("/api/v1/guwen/**").permitAll()
             .antMatchers("/api/v1/writers/**").permitAll()
             .antMatchers("/api/v1/sentences/**").permitAll()
-            // 允许评论查看接口
-            .antMatchers("/api/v1/comments").permitAll()
+            // 允许评论相关接口（查看、创建、删除、点赞等）
+            .antMatchers("/api/v1/comments/**").permitAll()
             // 允许Swagger文档访问
             .antMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
             // 允许健康检查

@@ -10,6 +10,7 @@
 package com.poem.education.repository.mongodb;
 
 import com.poem.education.entity.mongodb.Comment;
+import org.bson.types.ObjectId;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.mongodb.repository.MongoRepository;
@@ -41,14 +42,14 @@ public interface CommentRepository extends MongoRepository<Comment, String> {
     
     /**
      * 根据目标ID、类型和状态查找评论列表
-     * 
-     * @param targetId 目标ID
+     *
+     * @param targetId 目标ID (ObjectId类型)
      * @param targetType 目标类型
      * @param status 状态
      * @param pageable 分页参数
      * @return 评论分页列表
      */
-    Page<Comment> findByTargetIdAndTargetTypeAndStatus(String targetId, String targetType, Integer status, Pageable pageable);
+    Page<Comment> findByTargetIdAndTargetTypeAndStatus(ObjectId targetId, String targetType, Integer status, Pageable pageable);
     
     /**
      * 根据用户ID查找评论列表

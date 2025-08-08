@@ -10,6 +10,7 @@ const { Title, Text, Paragraph } = Typography;
 const WriterList = () => {
   const [writers, setWriters] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [dynasties, setDynasties] = useState([]);
   const [pagination, setPagination] = useState({
     current: 1,
     pageSize: 20,
@@ -20,9 +21,28 @@ const WriterList = () => {
     dynasty: ''
   });
 
+  // 组件挂载时加载朝代列表
+  useEffect(() => {
+    loadDynasties();
+  }, []);
+
+  // 监听分页和筛选条件变化
   useEffect(() => {
     loadWriters();
-  }, [pagination.current, pagination.pageSize]);
+  }, [pagination.current, pagination.pageSize, filters.keyword, filters.dynasty]);
+
+  const loadDynasties = async () => {
+    try {
+      const response = await writerAPI.getDynasties();
+      if (response.code === 200) {
+        setDynasties(response.data || []);
+      }
+    } catch (error) {
+      console.error('Failed to load dynasties:', error);
+      // 如果API失败，使用默认值
+      setDynasties(['唐代', '宋代', '元代', '明代', '清代', '汉代', '魏晋', '南北朝']);
+    }
+  };
 
   const loadWriters = async () => {
     setLoading(true);
@@ -61,6 +81,10 @@ const WriterList = () => {
 
   const handleFilterChange = (key, value) => {
     setFilters(prev => ({ ...prev, [key]: value }));
+    // 当筛选条件变化时，重置到第1页
+    if (pagination.current !== 1) {
+      setPagination(prev => ({ ...prev, current: 1 }));
+    }
   };
 
   const handlePageChange = (page, pageSize) => {
@@ -71,7 +95,7 @@ const WriterList = () => {
     }));
   };
 
-  const dynasties = ['唐', '宋', '元', '明', '清', '汉', '魏晋', '南北朝'];
+
 
   return (
     <div>
