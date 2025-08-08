@@ -74,7 +74,7 @@ CREATE TABLE user_favorites (
     id BIGINT PRIMARY KEY AUTO_INCREMENT,
     user_id BIGINT NOT NULL,
     target_id VARCHAR(24) NOT NULL COMMENT 'MongoDB ObjectId字符串(24字符)',
-    target_type VARCHAR(50) NOT NULL COMMENT '收藏类型：guwen/sentence/writer',
+    target_type VARCHAR(50) NOT NULL COMMENT '收藏类型：guwen/sentence/writer/creation',
     folder_name VARCHAR(100) DEFAULT '默认收藏夹' COMMENT '收藏夹名称',
     notes TEXT COMMENT '收藏备注',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,

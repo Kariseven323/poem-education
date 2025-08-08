@@ -128,8 +128,14 @@
     white-space: nowrap;
 }
 
-.poem-title .ant-tag {
-    margin-left: 8px;
+.poem-title-tags {
+    display: flex;
+    gap: 4px;
+    flex-shrink: 0;
+}
+
+.poem-title-tags .ant-tag {
+    margin: 0;
     border-radius: 4px;
     font-size: 0.75rem;
 }
@@ -150,8 +156,21 @@
     flex: 1;
     overflow: hidden;
     display: -webkit-box;
-    -webkit-line-clamp: 4;
+    -webkit-line-clamp: 3;
     -webkit-box-orient: vertical;
+}
+
+/* AI评分预览 */
+.ai-score-preview {
+    margin-bottom: 8px;
+    padding: 4px 8px;
+    background: linear-gradient(135deg, #fff7e6 0%, #fff1d6 100%);
+    border-radius: 6px;
+    border: 1px solid #ffe7ba;
+}
+
+.ai-score-preview .anticon {
+    margin-right: 4px;
 }
 
 /* 诗词元信息 */
@@ -188,11 +207,28 @@
     box-shadow: none;
     color: #8c8c8c;
     font-size: 0.9rem;
+    transition: all 0.2s ease;
 }
 
 .poem-card .ant-card-actions .ant-btn:hover {
     color: #1890ff;
     background-color: transparent;
+    transform: scale(1.05);
+}
+
+/* 诗词卡片点击效果 */
+.poem-card {
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.poem-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+}
+
+.poem-card:active {
+    transform: translateY(-2px);
 }
 
 /* 空状态 */

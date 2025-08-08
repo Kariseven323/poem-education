@@ -9,8 +9,10 @@
 // {{START_MODIFICATIONS}}
 import React, { useState, useEffect } from 'react';
 import { Card, Row, Col, Input, Select, Button, Pagination, message, Tag, Avatar, Space, Tooltip } from 'antd';
-import { SearchOutlined, HeartOutlined, HeartFilled, CommentOutlined, UserOutlined, CalendarOutlined } from '@ant-design/icons';
+import { SearchOutlined, HeartOutlined, HeartFilled, StarOutlined, UserOutlined, CalendarOutlined, EyeOutlined } from '@ant-design/icons';
 import { searchCreations, getUserCreations, toggleLike, creationAPI } from '../utils/api';
+import PoemDetailModal from './PoemDetailModal';
+import FavoriteButton from './FavoriteButton';
 import './PoemCommunity.css';
 
 const { Search } = Input;
@@ -31,6 +33,10 @@ const PoemCommunity = () => {
     const [total, setTotal] = useState(0);
     const [viewMode, setViewMode] = useState('all'); // 'all' | 'my'
     const [user, setUser] = useState(null);
+
+    // 详情弹窗状态
+    const [modalVisible, setModalVisible] = useState(false);
+    const [selectedPoemId, setSelectedPoemId] = useState(null);
 
     // 诗词风格选项
     const styleOptions = [
@@ -178,6 +184,31 @@ const PoemCommunity = () => {
         return content.substring(0, maxLength) + '...';
     };
 
+    // 处理诗词点击 - 打开详情弹窗
+    const handlePoemClick = (poem) => {
+        setSelectedPoemId(poem.id);
+        setModalVisible(true);
+    };
+
+    // 关闭详情弹窗
+    const handleModalClose = () => {
+        setModalVisible(false);
+        setSelectedPoemId(null);
+    };
+
+    // 获取AI评分显示
+    const getAIScoreDisplay = (aiScore) => {
+        if (!aiScore || !aiScore.totalScore) return null;
+        return (
+            <Space size="small">
+                <StarOutlined style={{ color: '#faad14' }} />
+                <span style={{ color: '#faad14', fontWeight: 500 }}>
+                    AI评分: {aiScore.totalScore}分
+                </span>
+            </Space>
+        );
+    };
+
     return (
         <div className="poem-community">
             {/* 页面标题 */}
@@ -245,35 +276,63 @@ const PoemCommunity = () => {
                             <Card
                                 className="poem-card"
                                 hoverable
+                                onClick={() => handlePoemClick(poem)}
                                 actions={[
+                                    <Tooltip title="浏览次数">
+                                        <Button
+                                            type="text"
+                                            icon={<EyeOutlined />}
+                                            onClick={(e) => e.stopPropagation()} // 阻止事件冒泡
+                                        >
+                                            {poem.viewCount || 0}
+                                        </Button>
+                                    </Tooltip>,
                                     <Tooltip title={poem.isLiked ? '取消点赞' : '点赞'}>
                                         <Button
                                             type="text"
                                             icon={poem.isLiked ? <HeartFilled style={{ color: '#ff4d4f' }} /> : <HeartOutlined />}
-                                            onClick={() => handleLike(poem.id)}
+                                            onClick={(e) => {
+                                                e.stopPropagation(); // 阻止事件冒泡
+                                                handleLike(poem.id);
+                                            }}
                                         >
                                             {poem.likeCount || 0}
                                         </Button>
                                     </Tooltip>,
-                                    <Tooltip title="评论">
-                                        <Button
-                                            type="text"
-                                            icon={<CommentOutlined />}
-                                        >
-                                            {poem.commentCount || 0}
-                                        </Button>
-                                    </Tooltip>
+                                    <FavoriteButton
+                                        targetId={poem.id}
+                                        targetType="creation"
+                                        size="small"
+                                        type="text"
+                                        showText={false}
+                                        style={{ border: 'none', padding: 0, height: 'auto' }}
+                                        onFavoriteChange={(isFavorited, folderName) => {
+                                            // 更新本地统计信息
+                                            const updatedPoems = poems.map(p => {
+                                                if (p.id === poem.id) {
+                                                    const newFavoriteCount = isFavorited ?
+                                                        (p.favoriteCount || 0) + 1 :
+                                                        Math.max((p.favoriteCount || 0) - 1, 0);
+                                                    return { ...p, favoriteCount: newFavoriteCount };
+                                                }
+                                                return p;
+                                            });
+                                            setPoems(updatedPoems);
+                                        }}
+                                    />
                                 ]}
                             >
                                 <Card.Meta
                                     title={
                                         <div className="poem-title">
                                             <span>{poem.title}</span>
-                                            {poem.style && (
-                                                <Tag color="blue" size="small">
-                                                    {poem.style}
-                                                </Tag>
-                                            )}
+                                            <div className="poem-title-tags">
+                                                {poem.style && (
+                                                    <Tag color="blue" size="small">
+                                                        {poem.style}
+                                                    </Tag>
+                                                )}
+                                            </div>
                                         </div>
                                     }
                                     description={
@@ -281,11 +340,19 @@ const PoemCommunity = () => {
                                             <p className="content-preview">
                                                 {getContentPreview(poem.content)}
                                             </p>
+
+                                            {/* AI评分显示 */}
+                                            {poem.aiScore && poem.aiScore.totalScore && (
+                                                <div className="ai-score-preview">
+                                                    {getAIScoreDisplay(poem.aiScore)}
+                                                </div>
+                                            )}
+
                                             <div className="poem-meta">
                                                 <Space size="small">
                                                     <Avatar size="small" icon={<UserOutlined />} />
                                                     <span className="author-name">
-                                                        {poem.authorName || '匿名'}
+                                                        {poem.authorUsername || poem.authorName || '匿名'}
                                                     </span>
                                                 </Space>
                                                 <Space size="small" className="poem-date">
@@ -332,6 +399,14 @@ const PoemCommunity = () => {
                     />
                 </div>
             )}
+
+            {/* 诗词详情弹窗 */}
+            <PoemDetailModal
+                visible={modalVisible}
+                onClose={handleModalClose}
+                poemId={selectedPoemId}
+                poemType="creation"
+            />
         </div>
     );
 };

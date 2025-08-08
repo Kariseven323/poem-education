@@ -59,7 +59,7 @@ public class UserFavorite {
     
     /**
      * 收藏类型
-     * 枚举值：guwen/sentence/writer
+     * 枚举值：guwen/sentence/writer/creation
      */
     @NotBlank(message = "收藏类型不能为空")
     @Size(max = 50, message = "收藏类型长度不能超过50个字符")

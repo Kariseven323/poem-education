@@ -28,7 +28,7 @@ import {
   StarOutlined,
   LikeOutlined
 } from '@ant-design/icons';
-import { guwenAPI, commentAPI, userActionAPI, statsAPI } from '../utils/api';
+import { guwenAPI, commentAPI, userActionAPI, statsAPI, creationAPI } from '../utils/api';
 import { normalizeType } from '../utils/dataUtils';
 import viewTracker from '../utils/viewTracker';
 import moment from 'moment';
@@ -47,7 +47,7 @@ const { TextArea } = Input;
 // }}
 // {{START_MODIFICATIONS}}
 
-const PoemDetailModal = ({ visible, onClose, poemId }) => {
+const PoemDetailModal = ({ visible, onClose, poemId, poemType = 'guwen' }) => {
   const [poem, setPoem] = useState(null);
   const [comments, setComments] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -651,10 +651,17 @@ const PoemDetailModal = ({ visible, onClose, poemId }) => {
 
     setLoading(true);
     try {
-      const response = await guwenAPI.getById(poemId);
+      let response;
+      // 根据类型选择不同的API
+      if (poemType === 'creation') {
+        response = await creationAPI.getById(poemId);
+      } else {
+        response = await guwenAPI.getById(poemId);
+      }
+
       if (response.code === 200) {
         setPoem(response.data);
-        setLikeCount(response.data.stats?.likeCount || 0);
+        setLikeCount(response.data.stats?.likeCount || response.data.likeCount || 0);
 
         // 记录诗词访问
         viewTracker.recordPoemView(poemId);
@@ -683,7 +690,8 @@ const PoemDetailModal = ({ visible, onClose, poemId }) => {
 
     setStatsLoading(true);
     try {
-      const response = await statsAPI.getContentStats(poemId, 'guwen');
+      const targetType = poemType === 'creation' ? 'creation' : 'guwen';
+      const response = await statsAPI.getContentStats(poemId, targetType);
       if (response.success && response.data) {
         setRealTimeStats(response.data);
         // 同步更新点赞数，确保数据一致性
@@ -704,9 +712,10 @@ const PoemDetailModal = ({ visible, onClose, poemId }) => {
     if (!currentUser || !poemId) return;
     
     try {
+      const targetType = poemType === 'creation' ? 'creation' : 'guwen';
       const response = await userActionAPI.hasAction({
         targetId: poemId,
-        targetType: 'guwen',
+        targetType: targetType,
         actionType: 'like'
       });
       if (response.code === 200) {
@@ -723,9 +732,10 @@ const PoemDetailModal = ({ visible, onClose, poemId }) => {
 
     setCommentsLoading(true);
     try {
+      const targetType = poemType === 'creation' ? 'creation' : 'guwen';
       const response = await commentAPI.getList({
         targetId: poemId,
-        targetType: 'guwen',
+        targetType: targetType,
         page: 1,
         size: 50
       });
@@ -865,9 +875,10 @@ const PoemDetailModal = ({ visible, onClose, poemId }) => {
 
     setSubmittingComment(true);
     try {
+      const targetType = poemType === 'creation' ? 'creation' : 'guwen';
       const requestData = {
         targetId: poemId,
-        targetType: 'guwen',
+        targetType: targetType,
         content: content
       };
 
