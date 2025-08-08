@@ -68,7 +68,12 @@ const FavoriteButton = ({
   }, [targetId, targetType]);
 
   // 快速收藏/取消收藏
-  const handleQuickFavorite = async () => {
+  const handleQuickFavorite = async (event) => {
+    // 阻止事件冒泡，防止触发父组件的点击事件
+    if (event) {
+      event.stopPropagation();
+    }
+
     if (!targetId || !targetType) {
       message.error('缺少必要参数');
       return;
@@ -166,7 +171,10 @@ const FavoriteButton = ({
             {isFavorited ? '取消收藏' : '收藏到默认收藏夹'}
           </Space>
         ),
-        onClick: handleQuickFavorite
+        onClick: (e) => {
+          e.stopPropagation();
+          handleQuickFavorite(e);
+        }
       },
       {
         type: 'divider'
@@ -174,18 +182,29 @@ const FavoriteButton = ({
       {
         key: 'select-folder',
         label: (
-          <div style={{ padding: '8px 0' }}>
+          <div
+            style={{ padding: '8px 0' }}
+            onClick={(e) => {
+              e.stopPropagation();
+            }}
+          >
             <div style={{ marginBottom: 8, fontWeight: 'bold' }}>选择收藏夹：</div>
             <FolderSelector
               value={currentFolder}
-              onChange={handleFavoriteToFolder}
+              onChange={(folderName) => {
+                // 阻止事件冒泡并处理收藏夹选择
+                handleFavoriteToFolder(folderName);
+              }}
               placeholder="选择收藏夹"
               size="small"
               style={{ width: '200px' }}
             />
           </div>
         ),
-        onClick: (e) => e.preventDefault() // 防止点击时关闭下拉菜单
+        onClick: (e) => {
+          e.preventDefault(); // 防止点击时关闭下拉菜单
+          e.stopPropagation(); // 防止事件冒泡
+        }
       }
     ];
 
@@ -231,6 +250,10 @@ const FavoriteButton = ({
         icon={<DownOutlined />}
         style={{ marginLeft: 0, borderLeft: 'none' }}
         loading={loading || checkLoading}
+        onClick={(e) => {
+          // 阻止事件冒泡，防止触发父组件的点击事件
+          e.stopPropagation();
+        }}
       />
     </Dropdown>
   );

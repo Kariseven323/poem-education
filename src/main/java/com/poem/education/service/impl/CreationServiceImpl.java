@@ -18,6 +18,8 @@ import com.poem.education.exception.BusinessException;
 import com.poem.education.repository.mongodb.CreationRepository;
 import com.poem.education.service.AIScoreService;
 import com.poem.education.service.CreationService;
+import com.poem.education.service.UserActionService;
+import com.poem.education.dto.request.UserActionRequest;
 import com.poem.education.constant.ErrorCode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -57,6 +59,9 @@ public class CreationServiceImpl implements CreationService {
     
     @Autowired
     private AIScoreService aiScoreService;
+
+    @Autowired
+    private UserActionService userActionService;
     
     @Override
     @Transactional
@@ -357,12 +362,31 @@ public class CreationServiceImpl implements CreationService {
         // 获取创作
         Creation creation = getCreationEntity(id);
 
-        // 检查是否已点赞（这里简化处理，实际应该有用户点赞记录表）
-        // 暂时通过点赞数的变化来模拟
-        Integer currentLikes = creation.getLikeCount() != null ? creation.getLikeCount() : 0;
-        creation.setLikeCount(currentLikes + 1);
-        creation.setUpdatedAt(LocalDateTime.now());
+        // 检查用户是否已经点赞过
+        boolean hasLiked = userActionService.hasAction(userId, id, "creation", "like");
 
+        Integer currentLikes = creation.getLikeCount() != null ? creation.getLikeCount() : 0;
+
+        if (hasLiked) {
+            // 用户已点赞，执行取消点赞
+            boolean cancelled = userActionService.cancelAction(userId, id, "creation", "like");
+            if (cancelled) {
+                creation.setLikeCount(Math.max(0, currentLikes - 1));
+                logger.info("用户{}取消点赞创作{}", userId, id);
+            }
+        } else {
+            // 用户未点赞，执行点赞
+            UserActionRequest actionRequest = new UserActionRequest();
+            actionRequest.setTargetId(id);
+            actionRequest.setTargetType("creation");
+            actionRequest.setActionType("like");
+
+            userActionService.recordAction(userId, actionRequest);
+            creation.setLikeCount(currentLikes + 1);
+            logger.info("用户{}点赞创作{}", userId, id);
+        }
+
+        creation.setUpdatedAt(LocalDateTime.now());
         Creation updatedCreation = creationRepository.save(creation);
 
         logger.info("创作点赞状态更新成功，ID：{}，点赞数：{}", id, updatedCreation.getLikeCount());

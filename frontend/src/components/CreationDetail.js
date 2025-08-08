@@ -37,7 +37,9 @@ import {
   EyeOutlined,
   CalendarOutlined,
   TagOutlined,
-  BulbOutlined
+  BulbOutlined,
+  GlobalOutlined,
+  LockOutlined
 } from '@ant-design/icons';
 import { useParams, useNavigate } from 'react-router-dom';
 import { creationAPI } from '../utils/api';
@@ -59,6 +61,7 @@ const CreationDetail = () => {
   const [radarLoading, setRadarLoading] = useState(false);
   const [aiScoring, setAiScoring] = useState(false);
   const [liking, setLiking] = useState(false);
+  const [publishing, setPublishing] = useState(false);
 
   // 获取当前用户信息
   const getCurrentUser = () => {
@@ -192,6 +195,32 @@ const CreationDetail = () => {
     loadCreation();
   };
 
+  // 发布到社区/取消发布
+  const handleTogglePublish = async () => {
+    if (!creation) return;
+
+    setPublishing(true);
+    try {
+      const newPublicStatus = !creation.isPublic;
+      const response = await creationAPI.togglePublic(id, newPublicStatus);
+
+      if (response.code === 200) {
+        setCreation(prev => ({
+          ...prev,
+          isPublic: newPublicStatus
+        }));
+        message.success(newPublicStatus ? '已发布到诗词社区' : '已取消发布');
+      } else {
+        message.error(response.message || '操作失败');
+      }
+    } catch (error) {
+      console.error('Failed to toggle publish status:', error);
+      message.error('操作失败，请稍后重试');
+    } finally {
+      setPublishing(false);
+    }
+  };
+
   useEffect(() => {
     loadCreation();
   }, [id]);
@@ -265,12 +294,24 @@ const CreationDetail = () => {
                     />
                   </Tooltip>
                   {isAuthor && (
-                    <Tooltip title="编辑">
-                      <Button 
-                        icon={<EditOutlined />} 
-                        onClick={handleEdit}
-                      />
-                    </Tooltip>
+                    <>
+                      <Tooltip title="编辑">
+                        <Button
+                          icon={<EditOutlined />}
+                          onClick={handleEdit}
+                        />
+                      </Tooltip>
+                      <Tooltip title={creation.isPublic ? "取消发布" : "发布到社区"}>
+                        <Button
+                          type={creation.isPublic ? "default" : "primary"}
+                          icon={creation.isPublic ? <LockOutlined /> : <GlobalOutlined />}
+                          onClick={handleTogglePublish}
+                          loading={publishing}
+                        >
+                          {creation.isPublic ? "取消发布" : "发布到社区"}
+                        </Button>
+                      </Tooltip>
+                    </>
                   )}
                 </Space>
               </div>
@@ -343,7 +384,19 @@ const CreationDetail = () => {
                   {creation.commentCount || 0}
                 </Descriptions.Item>
                 <Descriptions.Item label="公开状态" span={3}>
-                  {creation.isPublic ? '公开' : '私有'}
+                  <Space>
+                    {creation.isPublic ? (
+                      <>
+                        <GlobalOutlined style={{ color: '#52c41a' }} />
+                        <span style={{ color: '#52c41a' }}>已发布到社区</span>
+                      </>
+                    ) : (
+                      <>
+                        <LockOutlined style={{ color: '#faad14' }} />
+                        <span style={{ color: '#faad14' }}>私有作品</span>
+                      </>
+                    )}
+                  </Space>
                 </Descriptions.Item>
               </Descriptions>
             </div>

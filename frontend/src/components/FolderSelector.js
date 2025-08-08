@@ -90,7 +90,11 @@ const FolderSelector = ({
   };
 
   // 打开创建对话框
-  const openCreateModal = () => {
+  const openCreateModal = (event) => {
+    // 阻止事件冒泡，防止触发父组件的点击事件
+    if (event) {
+      event.stopPropagation();
+    }
     setCreateModalVisible(true);
   };
 
@@ -122,6 +126,10 @@ const FolderSelector = ({
         disabled={disabled}
         size={size}
         style={{ minWidth: 200, ...style }}
+        onClick={(e) => {
+          // 阻止事件冒泡，防止触发父组件的点击事件
+          e.stopPropagation();
+        }}
         dropdownRender={(menu) => (
           <>
             {menu}
@@ -152,18 +160,25 @@ const FolderSelector = ({
       <Modal
         title="创建新收藏夹"
         open={createModalVisible}
-        onCancel={() => {
+        onCancel={(e) => {
+          if (e) e.stopPropagation();
           setCreateModalVisible(false);
           createForm.resetFields();
         }}
         footer={null}
         destroyOnClose
         width={400}
+        onClick={(e) => {
+          e.stopPropagation();
+        }}
       >
         <Form
           form={createForm}
           layout="vertical"
           onFinish={handleCreateFolder}
+          onClick={(e) => {
+            e.stopPropagation();
+          }}
         >
           <Form.Item
             name="folderName"
@@ -181,18 +196,30 @@ const FolderSelector = ({
               }
             ]}
           >
-            <Input 
-              placeholder="请输入收藏夹名称" 
+            <Input
+              placeholder="请输入收藏夹名称"
               maxLength={50}
               prefix={<FolderOutlined />}
+              onClick={(e) => {
+                e.stopPropagation();
+              }}
             />
           </Form.Item>
           <Form.Item style={{ marginBottom: 0, textAlign: 'right' }}>
             <Space>
-              <Button onClick={() => setCreateModalVisible(false)}>
+              <Button onClick={(e) => {
+                e.stopPropagation();
+                setCreateModalVisible(false);
+              }}>
                 取消
               </Button>
-              <Button type="primary" htmlType="submit">
+              <Button
+                type="primary"
+                htmlType="submit"
+                onClick={(e) => {
+                  e.stopPropagation();
+                }}
+              >
                 创建
               </Button>
             </Space>
