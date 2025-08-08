@@ -21,6 +21,7 @@ import {
 import { writerAPI } from '../utils/api';
 import PoemDetailModal from './PoemDetailModal';
 import { normalizeType } from '../utils/dataUtils';
+import FavoriteButton from './FavoriteButton';
 
 const { Text } = Typography;
 
@@ -180,12 +181,32 @@ const WriterWorksSection = ({ writerId, writerName }) => {
                     {poem.content}
                   </div>
                   {poem.stats && (
-                    <div style={{ marginTop: 8, fontSize: '11px', color: '#999' }}>
+                    <div style={{
+                      marginTop: 8,
+                      fontSize: '11px',
+                      color: '#999',
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center'
+                    }}>
                       <Space size="small">
                         <span><EyeOutlined /> {poem.stats.viewCount || 0}</span>
                         <span><HeartOutlined /> {poem.stats.likeCount || 0}</span>
                         <span><StarOutlined /> {poem.stats.favoriteCount || 0}</span>
                       </Space>
+                      <FavoriteButton
+                        targetId={poem.id}
+                        targetType="guwen"
+                        size="small"
+                        type="text"
+                        showText={false}
+                        style={{
+                          border: 'none',
+                          padding: 0,
+                          height: 'auto',
+                          fontSize: '11px'
+                        }}
+                      />
                     </div>
                   )}
                 </div>

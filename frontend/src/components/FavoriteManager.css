@@ -1,0 +1,263 @@
+/* {{RIPER-5+SMART-6:
+   Action: "Parallel-Added"
+   Task_ID: "a77743be-39b5-4c83-8b62-c393aedede9e"
+   Timestamp: "2025-08-08T18:20:00+08:00"
+   Authoring_Subagent: "PM-快速模式"
+   Principle_Applied: "响应式设计，用户体验优化"
+   Quality_Check: "移动端适配，视觉一致性。"
+}} */
+/* {{START_MODIFICATIONS}} */
+
+.favorite-manager {
+  width: 100%;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+/* 统计信息卡片 */
+.stats-card {
+  margin-bottom: 16px;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.stats-content {
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  padding: 8px 0;
+}
+
+.stat-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  text-align: center;
+}
+
+.stat-item .anticon {
+  font-size: 24px;
+}
+
+.stat-number {
+  font-size: 24px;
+  font-weight: 600;
+  color: #262626;
+  line-height: 1;
+}
+
+.stat-label {
+  font-size: 12px;
+  color: #8c8c8c;
+  margin-top: 4px;
+}
+
+/* 收藏夹卡片 */
+.folders-card {
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.folders-card .ant-card-head {
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.folders-card .ant-card-head-title {
+  font-weight: 600;
+}
+
+/* 收藏夹列表 */
+.folders-list .ant-list-item {
+  padding: 16px 24px;
+  border-bottom: 1px solid #f0f0f0;
+  transition: all 0.3s ease;
+}
+
+.folders-list .ant-list-item:hover {
+  background-color: #fafafa;
+}
+
+.folders-list .ant-list-item:last-child {
+  border-bottom: none;
+}
+
+.folder-item {
+  cursor: pointer;
+}
+
+.folder-item .ant-list-item-meta-avatar {
+  margin-right: 16px;
+}
+
+.folder-item .ant-list-item-meta-title {
+  margin-bottom: 4px;
+  font-size: 16px;
+}
+
+.folder-item .ant-list-item-meta-description {
+  color: #8c8c8c;
+  font-size: 14px;
+}
+
+.folder-item .ant-list-item-action {
+  margin-left: 16px;
+}
+
+.folder-item .ant-list-item-action li {
+  padding: 0 4px;
+}
+
+.folder-item .ant-btn {
+  border: none;
+  box-shadow: none;
+}
+
+.folder-item .ant-btn:hover {
+  background-color: #f5f5f5;
+}
+
+.folder-item .ant-btn[disabled] {
+  opacity: 0.5;
+}
+
+/* 对话框样式 */
+.modal-buttons {
+  margin-bottom: 0;
+  text-align: right;
+}
+
+.modal-buttons .ant-space {
+  width: 100%;
+  justify-content: flex-end;
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+  .favorite-manager {
+    padding: 0 16px;
+  }
+  
+  .stats-content {
+    flex-direction: column;
+    gap: 16px;
+  }
+  
+  .stat-item {
+    flex-direction: column;
+    gap: 8px;
+  }
+  
+  .folders-list .ant-list-item {
+    padding: 12px 16px;
+  }
+  
+  .folder-item .ant-list-item-meta-avatar {
+    margin-right: 12px;
+  }
+  
+  .folder-item .ant-list-item-action {
+    margin-left: 8px;
+  }
+  
+  .folder-item .ant-list-item-action li {
+    padding: 0 2px;
+  }
+}
+
+@media (max-width: 480px) {
+  .stats-content {
+    padding: 16px 0;
+  }
+  
+  .stat-item {
+    width: 100%;
+    flex-direction: row;
+    justify-content: center;
+    gap: 12px;
+  }
+  
+  .folders-list .ant-list-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  
+  .folder-item .ant-list-item-action {
+    margin-left: 0;
+    align-self: flex-end;
+  }
+  
+  .folders-card .ant-card-extra {
+    margin-top: 8px;
+  }
+}
+
+/* 加载状态 */
+.ant-spin-container {
+  min-height: 200px;
+}
+
+/* 空状态 */
+.ant-empty {
+  padding: 40px 0;
+}
+
+/* Badge 样式调整 */
+.ant-badge {
+  display: inline-block;
+}
+
+.ant-badge-count {
+  background-color: #1890ff;
+  border-color: #1890ff;
+  font-size: 12px;
+  min-width: 20px;
+  height: 20px;
+  line-height: 18px;
+}
+
+/* 动画效果 */
+.folder-item {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.folder-item:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.stat-item .anticon {
+  transition: transform 0.3s ease;
+}
+
+.stat-item:hover .anticon {
+  transform: scale(1.1);
+}
+
+/* 主题色彩 */
+.folders-card .ant-card-head {
+  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+}
+
+.stats-card {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+}
+
+.stats-card .ant-card-body {
+  padding: 16px 24px;
+}
+
+.stats-card .stat-number {
+  color: white;
+}
+
+.stats-card .stat-label {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.stats-card .anticon {
+  color: white !important;
+}
+
+/* {{END_MODIFICATIONS}} */

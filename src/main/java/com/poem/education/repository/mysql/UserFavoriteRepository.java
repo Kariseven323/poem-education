@@ -13,6 +13,7 @@ import com.poem.education.entity.mysql.UserFavorite;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -234,16 +235,41 @@ public interface UserFavoriteRepository extends JpaRepository<UserFavorite, Long
     
     /**
      * 批量更新收藏夹名称
-     * 
+     *
      * @param userId 用户ID
      * @param oldFolderName 旧收藏夹名称
      * @param newFolderName 新收藏夹名称
      * @return 更新的记录数
      */
+    @Modifying
     @Query("UPDATE UserFavorite uf SET uf.folderName = :newFolderName " +
            "WHERE uf.userId = :userId AND uf.folderName = :oldFolderName")
-    int updateFolderName(@Param("userId") Long userId, 
-                        @Param("oldFolderName") String oldFolderName, 
+    int updateFolderName(@Param("userId") Long userId,
+                        @Param("oldFolderName") String oldFolderName,
                         @Param("newFolderName") String newFolderName);
+
+    /**
+     * 按收藏夹分组统计用户收藏数量
+     *
+     * @param userId 用户ID
+     * @return 收藏夹统计信息列表，每个元素包含[folderName, count]
+     */
+    @Query("SELECT uf.folderName, COUNT(uf) as favoriteCount " +
+           "FROM UserFavorite uf " +
+           "WHERE uf.userId = :userId AND uf.targetType != 'folder' " +
+           "GROUP BY uf.folderName " +
+           "ORDER BY uf.folderName")
+    List<Object[]> findFolderStatsGroupByFolderName(@Param("userId") Long userId);
+
+    /**
+     * 统计用户特定收藏夹中非占位符记录的数量
+     *
+     * @param userId 用户ID
+     * @param folderName 收藏夹名称
+     * @return 真实收藏数量（排除占位符）
+     */
+    @Query("SELECT COUNT(uf) FROM UserFavorite uf " +
+           "WHERE uf.userId = :userId AND uf.folderName = :folderName AND uf.targetType != 'folder'")
+    long countRealFavoritesByUserIdAndFolderName(@Param("userId") Long userId, @Param("folderName") String folderName);
 }
 // {{END_MODIFICATIONS}}

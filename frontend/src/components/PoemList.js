@@ -1,11 +1,13 @@
-import React, { useState, useEffect } from 'react';
-import { Card, List, Input, Select, Button, Space, Typography, Tag, Pagination, Spin, Empty } from 'antd';
-import { SearchOutlined, EyeOutlined, HeartOutlined, StarOutlined, BookOutlined } from '@ant-design/icons';
+import React, { useState, useEffect, useRef } from 'react';
+import { Card, List, Input, Select, Button, Space, Typography, Tag, Pagination, Spin, Empty, message, Tooltip } from 'antd';
+import { SearchOutlined, EyeOutlined, HeartOutlined, HeartFilled, StarOutlined, BookOutlined } from '@ant-design/icons';
 import { useLocation } from 'react-router-dom';
-import { guwenAPI, statsAPI } from '../utils/api';
+import { guwenAPI, statsAPI, userActionAPI } from '../utils/api';
 import { normalizeType } from '../utils/dataUtils';
 import viewTracker from '../utils/viewTracker';
 import PoemDetailModal from './PoemDetailModal';
+import FavoriteButton from './FavoriteButton';
+import { getCurrentUser } from '../utils/auth';
 
 const { Search } = Input;
 const { Option } = Select;
@@ -44,6 +46,12 @@ const PoemList = () => {
   // 统计数据状态
   const [poemStats, setPoemStats] = useState(new Map());
   const [statsLoading, setStatsLoading] = useState(false);
+
+  // 用户点赞状态
+  const [userLikeStatus, setUserLikeStatus] = useState(new Map());
+
+  // 防抖记录点击行为
+  const clickRecordTimeouts = useRef(new Map());
 
   // 组件挂载时加载朝代列表
   useEffect(() => {
@@ -128,6 +136,7 @@ const PoemList = () => {
         // 异步加载统计数据，不阻塞诗词列表显示
         if (poemList.length > 0) {
           loadPoemStats(poemList);
+          loadUserLikeStatus(poemList);
         }
       }
     } catch (error) {
@@ -198,6 +207,54 @@ const PoemList = () => {
     }
   };
 
+  // 批量获取用户点赞状态
+  const loadUserLikeStatus = async (poemList) => {
+    const currentUser = getCurrentUser();
+    if (!currentUser || !poemList || poemList.length === 0) {
+      return;
+    }
+
+    const newLikeStatusMap = new Map();
+
+    try {
+      // 批量并行获取用户点赞状态
+      const likeStatusPromises = poemList.map(async (poem) => {
+        try {
+          const response = await userActionAPI.hasAction({
+            targetId: poem.id,
+            targetType: 'guwen',
+            actionType: 'like'
+          });
+          if (response.code === 200) {
+            newLikeStatusMap.set(poem.id, response.data);
+          } else {
+            newLikeStatusMap.set(poem.id, false);
+          }
+        } catch (error) {
+          console.warn('获取用户点赞状态失败:', poem.id, error);
+          newLikeStatusMap.set(poem.id, false);
+        }
+      });
+
+      // 等待所有点赞状态获取完成
+      await Promise.all(likeStatusPromises);
+
+      // 更新用户点赞状态
+      setUserLikeStatus(prevStatus => {
+        const updatedStatus = new Map(prevStatus);
+        newLikeStatusMap.forEach((isLiked, poemId) => {
+          updatedStatus.set(poemId, isLiked);
+        });
+        return updatedStatus;
+      });
+
+      console.debug('批量获取用户点赞状态完成:', newLikeStatusMap.size, '条记录');
+
+    } catch (error) {
+      console.error('批量获取用户点赞状态失败:', error);
+    }
+  };
+
   const handleSearch = () => {
     setPagination(prev => ({ ...prev, current: 1 }));
     loadPoems();
@@ -219,8 +276,7 @@ const PoemList = () => {
     }));
   };
 
-  // 防抖记录点击的引用
-  const clickRecordTimeouts = React.useRef(new Map());
+
 
   // 组件卸载时清理所有防抖定时器
   useEffect(() => {
@@ -262,6 +318,79 @@ const PoemList = () => {
     }, 300); // 300ms防抖延迟
 
     clickRecordTimeouts.current.set(poemId, newTimeoutId);
+  };
+
+  // 处理点赞/取消点赞
+  const handleLike = async (poemId, event) => {
+    // 阻止事件冒泡，防止触发诗词详情弹窗
+    event.stopPropagation();
+
+    const currentUser = getCurrentUser();
+    if (!currentUser) {
+      message.warning('请先登录');
+      return;
+    }
+
+    const isCurrentlyLiked = userLikeStatus.get(poemId) || false;
+
+    try {
+      if (isCurrentlyLiked) {
+        // 取消点赞
+        const response = await userActionAPI.cancelAction({
+          targetId: poemId,
+          targetType: 'guwen',
+          actionType: 'like'
+        });
+        if (response.code === 200) {
+          // 更新本地状态
+          setUserLikeStatus(prev => {
+            const updated = new Map(prev);
+            updated.set(poemId, false);
+            return updated;
+          });
+          // 更新统计数据
+          setPoemStats(prev => {
+            const updated = new Map(prev);
+            const currentStats = updated.get(poemId) || {};
+            updated.set(poemId, {
+              ...currentStats,
+              likeCount: Math.max(0, (currentStats.likeCount || 0) - 1)
+            });
+            return updated;
+          });
+          message.success('取消点赞成功');
+        }
+      } else {
+        // 点赞
+        const response = await userActionAPI.recordAction({
+          targetId: poemId,
+          targetType: 'guwen',
+          actionType: 'like'
+        });
+        if (response.code === 200) {
+          // 更新本地状态
+          setUserLikeStatus(prev => {
+            const updated = new Map(prev);
+            updated.set(poemId, true);
+            return updated;
+          });
+          // 更新统计数据
+          setPoemStats(prev => {
+            const updated = new Map(prev);
+            const currentStats = updated.get(poemId) || {};
+            updated.set(poemId, {
+              ...currentStats,
+              likeCount: (currentStats.likeCount || 0) + 1
+            });
+            return updated;
+          });
+          message.success('点赞成功');
+        }
+      }
+    } catch (error) {
+      console.error('点赞操作失败:', error);
+      message.error(isCurrentlyLiked ? '取消点赞失败' : '点赞失败');
+    }
   };
 
   // 关闭弹窗
@@ -387,14 +516,41 @@ const PoemList = () => {
                       <EyeOutlined />
                       {poemStats.get(poem.id)?.viewCount || poem.stats?.viewCount || 0}
                     </Space>,
-                    <Space>
-                      <HeartOutlined />
-                      {poemStats.get(poem.id)?.likeCount || poem.stats?.likeCount || 0}
-                    </Space>,
-                    <Space>
-                      <StarOutlined />
-                      {poemStats.get(poem.id)?.favoriteCount || poem.stats?.favoriteCount || 0}
-                    </Space>
+                    <Tooltip title={userLikeStatus.get(poem.id) ? '取消点赞' : '点赞'}>
+                      <Button
+                        type="text"
+                        icon={userLikeStatus.get(poem.id) ?
+                          <HeartFilled style={{ color: '#ff4d4f' }} /> :
+                          <HeartOutlined />
+                        }
+                        onClick={(e) => handleLike(poem.id, e)}
+                        style={{ border: 'none', padding: 0, height: 'auto' }}
+                      >
+                        {poemStats.get(poem.id)?.likeCount || poem.stats?.likeCount || 0}
+                      </Button>
+                    </Tooltip>,
+                    <FavoriteButton
+                      targetId={poem.id}
+                      targetType="guwen"
+                      size="small"
+                      type="text"
+                      showText={false}
+                      style={{ border: 'none', padding: 0, height: 'auto' }}
+                      onFavoriteChange={(isFavorited, folderName) => {
+                        // 更新本地统计信息
+                        const currentStats = poemStats.get(poem.id) || poem.stats || {};
+                        const newFavoriteCount = isFavorited ?
+                          (currentStats.favoriteCount || 0) + 1 :
+                          Math.max((currentStats.favoriteCount || 0) - 1, 0);
+
+                        const newStats = new Map(poemStats);
+                        newStats.set(poem.id, {
+                          ...currentStats,
+                          favoriteCount: newFavoriteCount
+                        });
+                        setPoemStats(newStats);
+                      }}
+                    />
                   ]}
                 >
                   <Card.Meta

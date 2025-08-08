@@ -13,6 +13,7 @@ import {
 import { guwenAPI } from '../utils/api';
 import viewTracker from '../utils/viewTracker';
 import { normalizeType } from '../utils/dataUtils';
+import FavoriteButton from './FavoriteButton';
 
 const { Title, Paragraph, Text } = Typography;
 
@@ -168,9 +169,14 @@ const PoemDetail = () => {
                 <Button type="primary" icon={<HeartOutlined />}>
                   点赞
                 </Button>
-                <Button icon={<StarOutlined />}>
-                  收藏
-                </Button>
+                <FavoriteButton
+                  targetId={poem.id}
+                  targetType="guwen"
+                  onFavoriteChange={(isFavorited, folderName) => {
+                    // 可以在这里更新本地状态或统计信息
+                    console.log('收藏状态变更:', isFavorited, folderName);
+                  }}
+                />
                 <Button icon={<ShareAltOutlined />}>
                   分享
                 </Button>

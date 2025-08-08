@@ -266,4 +266,130 @@ export const statsAPI = {
   },
 };
 
+// 收藏夹相关API
+export const favoriteAPI = {
+  /**
+   * 获取用户收藏夹列表
+   * @returns {Promise} 收藏夹列表
+   */
+  getFolders: () => api.get('/favorites/folders'),
+
+  /**
+   * 创建收藏夹
+   * @param {string} folderName - 收藏夹名称
+   * @returns {Promise} 创建结果
+   */
+  createFolder: (folderName) => api.post('/favorites/folders', null, {
+    params: { folderName }
+  }),
+
+  /**
+   * 重命名收藏夹
+   * @param {string} oldName - 旧收藏夹名称
+   * @param {string} newName - 新收藏夹名称
+   * @returns {Promise} 重命名结果
+   */
+  renameFolder: (oldName, newName) => api.put('/favorites/folders', null, {
+    params: { oldFolderName: oldName, newFolderName: newName }
+  }),
+
+  /**
+   * 删除收藏夹
+   * @param {string} folderName - 收藏夹名称
+   * @returns {Promise} 删除结果
+   */
+  deleteFolder: (folderName) => api.delete('/favorites/folders', {
+    params: { folderName }
+  }),
+
+  /**
+   * 移动收藏项到指定收藏夹
+   * @param {number} favoriteId - 收藏项ID
+   * @param {string} targetFolder - 目标收藏夹名称
+   * @returns {Promise} 移动结果
+   */
+  moveFavorite: (favoriteId, targetFolder) => api.put(`/favorites/${favoriteId}/move`, null, {
+    params: { newFolderName: targetFolder }
+  }),
+
+  /**
+   * 获取收藏夹统计信息
+   * @returns {Promise} 统计信息
+   */
+  getFolderStats: () => api.get('/favorites/folders/stats'),
+
+  /**
+   * 添加收藏
+   * @param {Object} data - 收藏数据
+   * @param {string} data.targetId - 目标ID
+   * @param {string} data.targetType - 目标类型
+   * @param {string} [data.folderName] - 收藏夹名称，默认为"默认收藏夹"
+   * @param {string} [data.notes] - 收藏备注
+   * @returns {Promise} 收藏结果
+   */
+  addFavorite: (data) => api.post('/favorites', data),
+
+  /**
+   * 删除收藏
+   * @param {string} targetId - 目标ID
+   * @param {string} targetType - 目标类型
+   * @returns {Promise} 删除结果
+   */
+  removeFavorite: (targetId, targetType) => api.delete('/favorites', {
+    params: { targetId, targetType }
+  }),
+
+  /**
+   * 获取用户收藏列表
+   * @param {Object} params - 查询参数
+   * @param {number} [params.page] - 页码
+   * @param {number} [params.size] - 每页大小
+   * @param {string} [params.folderName] - 收藏夹名称
+   * @param {string} [params.targetType] - 目标类型
+   * @returns {Promise} 收藏列表
+   */
+  getFavorites: (params = {}) => {
+    const { folderName, targetType, ...otherParams } = params;
+
+    if (folderName) {
+      // 按收藏夹获取收藏
+      return api.get('/favorites/folder', { params: { folderName, ...otherParams } });
+    } else if (targetType) {
+      // 按类型获取收藏
+      return api.get('/favorites/user/type', { params: { targetType, ...otherParams } });
+    } else {
+      // 获取所有收藏
+      return api.get('/favorites/user', { params: otherParams });
+    }
+  },
+
+  /**
+   * 检查是否已收藏
+   * @param {string} targetId - 目标ID
+   * @param {string} targetType - 目标类型
+   * @returns {Promise} 收藏状态
+   */
+  checkFavorite: (targetId, targetType) => api.get('/favorites/check', {
+    params: { targetId, targetType }
+  }),
+
+  /**
+   * 获取最近收藏的内容
+   * @param {number} [limit=10] - 限制数量
+   * @returns {Promise} 最近收藏列表
+   */
+  getRecentFavorites: (limit = 10) => api.get('/favorites/recent', {
+    params: { limit }
+  }),
+
+  /**
+   * 获取用户收藏数量
+   * @param {string} [targetType] - 目标类型（可选）
+   * @returns {Promise} 收藏数量
+   */
+  getFavoriteCount: (targetType) => api.get('/favorites/count', {
+    params: targetType ? { targetType } : {}
+  })
+};
+
 export default api;

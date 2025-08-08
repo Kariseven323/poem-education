@@ -23,6 +23,7 @@ import org.springframework.web.bind.annotation.*;
 import javax.servlet.http.HttpServletRequest;
 import javax.validation.Valid;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 收藏控制器
@@ -328,7 +329,7 @@ public class FavoriteController {
     /**
      * 获取最近收藏的内容
      * GET /api/v1/favorites/recent?limit=10
-     * 
+     *
      * @param request HTTP请求
      * @param limit 限制数量，默认10
      * @return 最近收藏列表
@@ -337,13 +338,30 @@ public class FavoriteController {
     public Result<List<FavoriteDTO>> getRecentFavorites(
             HttpServletRequest request,
             @RequestParam(defaultValue = "10") Integer limit) {
-        
+
         Long userId = getCurrentUserId(request);
         logger.info("获取最近收藏: userId={}, limit={}", userId, limit);
-        
+
         List<FavoriteDTO> result = favoriteService.getRecentFavorites(userId, limit);
-        
+
         return Result.success(result, "获取最近收藏成功");
+    }
+
+    /**
+     * 获取收藏夹统计信息
+     * GET /api/v1/favorites/folders/stats
+     *
+     * @param request HTTP请求
+     * @return 收藏夹统计信息
+     */
+    @GetMapping("/folders/stats")
+    public Result<com.poem.education.dto.response.FolderStatsDTO> getFolderStats(HttpServletRequest request) {
+        Long userId = getCurrentUserId(request);
+        logger.info("获取收藏夹统计信息: userId={}", userId);
+
+        com.poem.education.dto.response.FolderStatsDTO stats = favoriteService.getFolderStatsDTO(userId);
+
+        return Result.success(stats, "获取收藏夹统计信息成功");
     }
     
     /**

@@ -150,15 +150,32 @@ public class FavoriteServiceImpl implements FavoriteService {
     @Transactional
     public boolean createFolder(Long userId, String folderName) {
         logger.info("创建收藏夹: userId={}, folderName={}", userId, folderName);
-        
+
+        // 验证收藏夹名称
+        if (folderName == null || folderName.trim().isEmpty()) {
+            logger.warn("收藏夹名称不能为空: userId={}", userId);
+            return false;
+        }
+
         // 检查收藏夹是否已存在
-        boolean exists = userFavoriteRepository.existsByUserIdAndFolderName(userId, folderName);
+        boolean exists = userFavoriteRepository.existsByUserIdAndFolderName(userId, folderName.trim());
         if (exists) {
+            logger.info("收藏夹已存在: userId={}, folderName={}", userId, folderName);
             return false; // 收藏夹已存在
         }
-        
-        // 创建一个空的收藏夹记录（可以考虑创建一个专门的收藏夹表）
-        // 这里暂时通过检查是否有该收藏夹名称的收藏来判断收藏夹是否存在
+
+        // 创建一个占位符收藏记录来表示空收藏夹
+        // 使用特殊的targetId和targetType来标识这是一个收藏夹占位符
+        UserFavorite placeholder = new UserFavorite();
+        placeholder.setUserId(userId);
+        placeholder.setTargetId("FOLDER_PLACEHOLDER");
+        placeholder.setTargetType("folder");
+        placeholder.setFolderName(folderName.trim());
+        placeholder.setNotes("收藏夹占位符，用于标识空收藏夹");
+
+        userFavoriteRepository.save(placeholder);
+
+        logger.info("成功创建收藏夹: userId={}, folderName={}", userId, folderName);
         return true;
     }
     
@@ -185,10 +202,16 @@ public class FavoriteServiceImpl implements FavoriteService {
     @Transactional
     public boolean deleteFolder(Long userId, String folderName) {
         logger.info("删除收藏夹: userId={}, folderName={}", userId, folderName);
-        
+
+        // 检查是否为默认收藏夹，默认收藏夹不可删除
+        if ("默认收藏夹".equals(folderName)) {
+            logger.warn("尝试删除默认收藏夹: userId={}", userId);
+            return false;
+        }
+
         // 删除该收藏夹下的所有收藏
         long deletedCount = userFavoriteRepository.deleteByUserIdAndFolderName(userId, folderName);
-        
+
         return deletedCount > 0;
     }
     
@@ -267,13 +290,79 @@ public class FavoriteServiceImpl implements FavoriteService {
     @Transactional
     public long deleteUserFavorites(Long userId) {
         logger.info("删除用户所有收藏: userId={}", userId);
-        
+
         return userFavoriteRepository.deleteByUserId(userId);
     }
+
+    @Override
+    public java.util.Map<String, Object> getFolderStats(Long userId) {
+        logger.info("获取收藏夹统计信息: userId={}", userId);
+
+        java.util.Map<String, Object> stats = new java.util.HashMap<>();
+
+        // 获取用户所有收藏夹
+        List<String> folders = userFavoriteRepository.findFolderNamesByUserId(userId);
+
+        // 统计每个收藏夹的收藏数量
+        java.util.Map<String, Long> folderCounts = new java.util.HashMap<>();
+        long totalCount = 0;
+
+        for (String folder : folders) {
+            // 使用优化的查询方法，直接统计真实收藏数量（排除占位符）
+            long realCount = userFavoriteRepository.countRealFavoritesByUserIdAndFolderName(userId, folder);
+            folderCounts.put(folder, realCount);
+            totalCount += realCount;
+        }
+
+        stats.put("totalFolders", folders.size());
+        stats.put("totalItems", totalCount);
+        stats.put("folderCounts", folderCounts);
+        stats.put("folders", folders);
+
+        return stats;
+    }
     
+    @Override
+    public com.poem.education.dto.response.FolderStatsDTO getFolderStatsDTO(Long userId) {
+        logger.info("获取收藏夹统计信息DTO: userId={}", userId);
+
+        // 获取用户所有收藏夹
+        List<String> folders = userFavoriteRepository.findFolderNamesByUserId(userId);
+
+        // 创建收藏夹详情列表
+        List<com.poem.education.dto.response.FolderDTO> folderDetails = new java.util.ArrayList<>();
+        java.util.Map<String, Long> folderCounts = new java.util.HashMap<>();
+        long totalCount = 0;
+
+        for (String folder : folders) {
+            // 使用优化的查询方法，直接统计真实收藏数量（排除占位符）
+            long realCount = userFavoriteRepository.countRealFavoritesByUserIdAndFolderName(userId, folder);
+            folderCounts.put(folder, realCount);
+            totalCount += realCount;
+
+            // 创建FolderDTO
+            com.poem.education.dto.response.FolderDTO folderDTO = new com.poem.education.dto.response.FolderDTO(
+                folder,
+                (int) realCount
+            );
+            folderDetails.add(folderDTO);
+        }
+
+        // 创建统计DTO
+        com.poem.education.dto.response.FolderStatsDTO statsDTO = new com.poem.education.dto.response.FolderStatsDTO(
+            folders.size(),
+            totalCount,
+            folderDetails,
+            folderCounts,
+            folders
+        );
+
+        return statsDTO;
+    }
+
     /**
      * 将UserFavorite实体转换为FavoriteDTO
-     * 
+     *
      * @param userFavorite UserFavorite实体
      * @return FavoriteDTO
      */

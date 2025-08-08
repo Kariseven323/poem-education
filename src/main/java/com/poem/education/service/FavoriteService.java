@@ -178,10 +178,26 @@ public interface FavoriteService {
     
     /**
      * 删除用户的所有收藏
-     * 
+     *
      * @param userId 用户ID
      * @return 删除的记录数量
      */
     long deleteUserFavorites(Long userId);
+
+    /**
+     * 获取收藏夹统计信息
+     *
+     * @param userId 用户ID
+     * @return 收藏夹统计信息
+     */
+    java.util.Map<String, Object> getFolderStats(Long userId);
+
+    /**
+     * 获取收藏夹统计信息DTO
+     *
+     * @param userId 用户ID
+     * @return 收藏夹统计信息DTO
+     */
+    com.poem.education.dto.response.FolderStatsDTO getFolderStatsDTO(Long userId);
 }
 // {{END_MODIFICATIONS}}
