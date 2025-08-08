@@ -50,12 +50,22 @@ public interface CreationRepository extends MongoRepository<Creation, String> {
     
     /**
      * 根据状态查找创作列表
-     * 
+     *
      * @param status 状态
      * @param pageable 分页参数
      * @return 创作分页列表
      */
     Page<Creation> findByStatus(Integer status, Pageable pageable);
+
+    /**
+     * 根据状态和公开状态查找创作列表
+     *
+     * @param status 状态
+     * @param isPublic 是否公开
+     * @param pageable 分页参数
+     * @return 创作分页列表
+     */
+    Page<Creation> findByStatusAndIsPublic(Integer status, Boolean isPublic, Pageable pageable);
     
     /**
      * 根据风格查找创作列表
@@ -68,13 +78,24 @@ public interface CreationRepository extends MongoRepository<Creation, String> {
     
     /**
      * 根据风格和状态查找创作列表
-     * 
+     *
      * @param style 风格
      * @param status 状态
      * @param pageable 分页参数
      * @return 创作分页列表
      */
     Page<Creation> findByStyleAndStatus(String style, Integer status, Pageable pageable);
+
+    /**
+     * 根据风格、状态和公开状态查找创作列表
+     *
+     * @param style 风格
+     * @param status 状态
+     * @param isPublic 是否公开
+     * @param pageable 分页参数
+     * @return 创作分页列表
+     */
+    Page<Creation> findByStyleAndStatusAndIsPublic(String style, Integer status, Boolean isPublic, Pageable pageable);
     
     /**
      * 根据标题模糊查询创作
@@ -112,6 +133,25 @@ public interface CreationRepository extends MongoRepository<Creation, String> {
     Page<Creation> searchByKeyword(String keyword, Integer status, Pageable pageable);
 
     /**
+     * 根据关键词搜索公开创作（标题或内容包含关键词）
+     *
+     * @param keyword 关键词
+     * @param status 状态
+     * @param isPublic 是否公开
+     * @param pageable 分页参数
+     * @return 创作分页列表
+     */
+    @Query("{ $and: [ " +
+           "{ $or: [ " +
+           "  { 'title': { $regex: ?0, $options: 'i' } }, " +
+           "  { 'content': { $regex: ?0, $options: 'i' } } " +
+           "] }, " +
+           "{ 'status': ?1 }, " +
+           "{ 'isPublic': ?2 } " +
+           "] }")
+    Page<Creation> searchByKeywordAndIsPublic(String keyword, Integer status, Boolean isPublic, Pageable pageable);
+
+    /**
      * 根据关键词和风格搜索创作
      *
      * @param keyword 关键词
@@ -129,6 +169,27 @@ public interface CreationRepository extends MongoRepository<Creation, String> {
            "{ 'status': ?2 } " +
            "] }")
     Page<Creation> searchByKeywordAndStyle(String keyword, String style, Integer status, Pageable pageable);
+
+    /**
+     * 根据关键词和风格搜索公开创作
+     *
+     * @param keyword 关键词
+     * @param style 风格
+     * @param status 状态
+     * @param isPublic 是否公开
+     * @param pageable 分页参数
+     * @return 创作分页列表
+     */
+    @Query("{ $and: [ " +
+           "{ $or: [ " +
+           "  { 'title': { $regex: ?0, $options: 'i' } }, " +
+           "  { 'content': { $regex: ?0, $options: 'i' } } " +
+           "] }, " +
+           "{ 'style': ?1 }, " +
+           "{ 'status': ?2 }, " +
+           "{ 'isPublic': ?3 } " +
+           "] }")
+    Page<Creation> searchByKeywordAndStyleAndIsPublic(String keyword, String style, Integer status, Boolean isPublic, Pageable pageable);
     
     /**
      * 统计用户的创作数量

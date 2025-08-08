@@ -94,18 +94,26 @@ public class CreationServiceImpl implements CreationService {
     @Override
     public CreationDTO getCreationById(String id) {
         logger.debug("获取创作详情，ID：{}", id);
-        
+
         Optional<Creation> creationOpt = creationRepository.findById(id);
         if (!creationOpt.isPresent()) {
             throw new BusinessException(ErrorCode.CREATION_NOT_FOUND, "创作不存在");
         }
-        
+
         Creation creation = creationOpt.get();
         if (creation.getStatus() != 1) {
             throw new BusinessException(ErrorCode.CREATION_NOT_FOUND, "创作已被删除");
         }
-        
-        return convertToDTO(creation);
+
+        // 调试信息：记录数据库中的实际值
+        logger.info("数据库中创作{}的isPublic值：{}", id, creation.getIsPublic());
+
+        CreationDTO dto = convertToDTO(creation);
+
+        // 调试信息：记录DTO中的值
+        logger.info("DTO中创作{}的isPublic值：{}", id, dto.getIsPublic());
+
+        return dto;
     }
     
     @Override
@@ -137,19 +145,39 @@ public class CreationServiceImpl implements CreationService {
     
     @Override
     public PageResult<CreationDTO> getPublicCreations(Integer page, Integer size, String style) {
-        logger.debug("获取公开创作列表，页码：{}，大小：{}", page, size);
-        
+        logger.info("=== Service层：获取公开创作列表 ===");
+        logger.info("参数: page={}, size={}, style={}", page, size, style);
+
         // 创建分页参数
         Pageable pageable = PageRequest.of(page - 1, size, Sort.by(Sort.Direction.DESC, "createdAt"));
-        
-        // 简化实现，使用基本查询
-        Page<Creation> creationPage = creationRepository.findByStatus(1, pageable);
-        
+
+        Page<Creation> creationPage;
+        if (style != null && !style.trim().isEmpty()) {
+            // 按风格和公开状态查询
+            logger.info("执行查询: findByStyleAndStatusAndIsPublic(style={}, status=1, isPublic=true)", style);
+            creationPage = creationRepository.findByStyleAndStatusAndIsPublic(style, 1, true, pageable);
+        } else {
+            // 只按状态和公开状态查询
+            logger.info("执行查询: findByStatusAndIsPublic(status=1, isPublic=true)");
+            creationPage = creationRepository.findByStatusAndIsPublic(1, true, pageable);
+        }
+
+        logger.info("数据库查询结果: 总数={}, 当前页数据量={}", creationPage.getTotalElements(), creationPage.getContent().size());
+
+        // 打印前几条原始数据
+        if (creationPage.getContent().size() > 0) {
+            Creation firstCreation = creationPage.getContent().get(0);
+            logger.info("第一条原始数据: id={}, title={}, isPublic={}, status={}",
+                firstCreation.getId(), firstCreation.getTitle(), firstCreation.getIsPublic(), firstCreation.getStatus());
+        }
+
         // 转换为DTO列表
         List<CreationDTO> creationDTOs = creationPage.getContent().stream()
                 .map(this::convertToDTO)
                 .collect(Collectors.toList());
-        
+
+        logger.info("DTO转换完成: 转换后数量={}", creationDTOs.size());
+
         return new PageResult<>(
                 creationDTOs,
                 page,
@@ -396,7 +424,7 @@ public class CreationServiceImpl implements CreationService {
 
     @Override
     public PageResult<CreationDTO> searchCreations(String keyword, Integer page, Integer size, String style) {
-        logger.debug("搜索创作，关键词：{}，页码：{}，大小：{}", keyword, page, size);
+        logger.debug("搜索公开创作，关键词：{}，页码：{}，大小：{}，风格：{}", keyword, page, size, style);
 
         // 创建分页参数
         Pageable pageable = PageRequest.of(page - 1, size, Sort.by(Sort.Direction.DESC, "createdAt"));
@@ -406,18 +434,20 @@ public class CreationServiceImpl implements CreationService {
         if (keyword != null && !keyword.trim().isEmpty()) {
             // 有关键词时进行搜索
             if (style != null && !style.trim().isEmpty()) {
-                // 同时按关键词和风格搜索
-                creationPage = creationRepository.searchByKeywordAndStyle(keyword, style, 1, pageable);
+                // 同时按关键词、风格和公开状态搜索
+                creationPage = creationRepository.searchByKeywordAndStyleAndIsPublic(keyword, style, 1, true, pageable);
             } else {
-                // 只按关键词搜索
-                creationPage = creationRepository.searchByKeyword(keyword, 1, pageable);
+                // 按关键词和公开状态搜索
+                creationPage = creationRepository.searchByKeywordAndIsPublic(keyword, 1, true, pageable);
             }
         } else {
             // 无关键词时按条件筛选
             if (style != null && !style.trim().isEmpty()) {
-                creationPage = creationRepository.findByStyleAndStatus(style, 1, pageable);
+                // 按风格、状态和公开状态筛选
+                creationPage = creationRepository.findByStyleAndStatusAndIsPublic(style, 1, true, pageable);
             } else {
-                creationPage = creationRepository.findByStatus(1, pageable);
+                // 按状态和公开状态筛选
+                creationPage = creationRepository.findByStatusAndIsPublic(1, true, pageable);
             }
         }
 
@@ -440,6 +470,9 @@ public class CreationServiceImpl implements CreationService {
     private CreationDTO convertToDTO(Creation creation) {
         CreationDTO dto = new CreationDTO();
         BeanUtils.copyProperties(creation, dto);
+
+        // 手动设置authorId字段（因为Creation中是userId）
+        dto.setAuthorId(creation.getUserId());
 
         // 转换AI评分
         if (creation.getAiScore() != null) {

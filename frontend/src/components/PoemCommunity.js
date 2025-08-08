@@ -10,7 +10,7 @@
 import React, { useState, useEffect } from 'react';
 import { Card, Row, Col, Input, Select, Button, Pagination, message, Tag, Avatar, Space, Tooltip } from 'antd';
 import { SearchOutlined, HeartOutlined, HeartFilled, CommentOutlined, UserOutlined, CalendarOutlined } from '@ant-design/icons';
-import { searchCreations, getUserCreations, toggleLike } from '../utils/api';
+import { searchCreations, getUserCreations, toggleLike, creationAPI } from '../utils/api';
 import './PoemCommunity.css';
 
 const { Search } = Input;
@@ -54,26 +54,45 @@ const PoemCommunity = () => {
 
     // 加载诗词列表
     const loadPoems = async (page = 1, keyword = '', style = '', mode = 'all') => {
+        console.log('=== 前端：开始加载诗词列表 ===');
+        console.log('参数:', { page, keyword, style, mode, pageSize });
+
         setLoading(true);
         try {
             let response;
             if (mode === 'my' && user) {
                 // 获取用户自己的创作
+                console.log('调用getUserCreations API');
                 response = await getUserCreations(user.id, page, pageSize, style);
             } else {
-                // 搜索公开创作
+                // 获取公开创作
                 if (keyword.trim()) {
+                    // 有关键词时使用搜索API
+                    console.log('调用searchCreations API，关键词:', keyword);
                     response = await searchCreations(keyword, page, pageSize, style);
                 } else {
-                    // 获取所有公开创作
-                    response = await searchCreations('', page, pageSize, style);
+                    // 无关键词时使用公开创作列表API
+                    const params = { page, size: pageSize };
+                    if (style) params.style = style;
+                    console.log('调用creationAPI.getPublicList，参数:', params);
+                    response = await creationAPI.getPublicList(params);
                 }
             }
 
-            if (response.success) {
-                setPoems(response.data.items || []);
+            console.log('API响应:', response);
+
+            if (response.code === 200) {
+                // PageResult的字段名是list，不是items
+                const items = response.data.list || [];
+                console.log('解析的数据:', {
+                    total: response.data.total,
+                    itemsCount: items.length,
+                    firstItem: items[0]
+                });
+                setPoems(items);
                 setTotal(response.data.total || 0);
             } else {
+                console.error('API返回错误:', response);
                 message.error(response.message || '加载失败');
             }
         } catch (error) {

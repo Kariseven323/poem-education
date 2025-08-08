@@ -125,11 +125,21 @@ public class CreationController {
             @RequestParam(defaultValue = "1") Integer page,
             @RequestParam(defaultValue = "20") Integer size,
             @RequestParam(required = false) String style) {
-        
-        logger.info("获取公开创作列表: page={}, size={}, style={}", page, size, style);
-        
+
+        logger.info("=== 获取公开创作列表API调用 ===");
+        logger.info("请求参数: page={}, size={}, style={}", page, size, style);
+
         PageResult<CreationDTO> result = creationService.getPublicCreations(page, size, style);
-        
+
+        logger.info("查询结果: 总数={}, 当前页数据量={}", result.getTotal(), result.getList().size());
+        if (result.getList().size() > 0) {
+            logger.info("第一条数据: id={}, title={}, isPublic={}",
+                result.getList().get(0).getId(),
+                result.getList().get(0).getTitle(),
+                result.getList().get(0).getIsPublic());
+        }
+        logger.info("=== 公开创作列表API调用结束 ===");
+
         return Result.success(result, "获取公开创作列表成功");
     }
     
