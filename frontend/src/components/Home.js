@@ -109,9 +109,6 @@ const Home = () => {
               <Button type="primary" size="large" href="/poems">
                 开始探索
               </Button>
-              <Button size="large" style={{ color: 'white', borderColor: 'white' }} href="/api-test">
-                API测试
-              </Button>
             </Space>
           </Col>
           <Col span={8} style={{ textAlign: 'center' }}>
