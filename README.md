@@ -159,3 +159,5 @@ npm test
 ---
 
 如需更多帮助，请阅读 project_document/main.md 获取项目总览。
+
+此项目终究只是一个半成品，练手使用。
